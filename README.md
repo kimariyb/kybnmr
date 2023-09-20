@@ -26,6 +26,8 @@ To implement the ideas for NMR calculations, we use the following computational 
 - Programs for calculating the Boltzmann distribution: `Shermo`.
 - Programs for calculating NMR according to the Boltzmann distribution: `Multiwfn`.
 
+<img src="app.png" width="80%">
+
 ## What is the Double Check
 
 Double Check is a kind of check in the CalcNMR program to determine whether the obtained conformation meets the requirements. 
@@ -38,7 +40,7 @@ The second criterion is to check whether there is a duplicate structure, for exa
 
 Double Check helps us to find the structures that satisfy the above two cases, and finally we eliminate these structures and can proceed to the next step of the calculation.
 
-## How to installation
+## How to install CalcNMR
 
 ## How to use CalcNMR
 
