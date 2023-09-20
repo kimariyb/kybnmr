@@ -59,3 +59,11 @@ Double Check helps us to find the structures that satisfy the above two cases, a
 - Tian Lu, Molclus program, Version 1.12, http://www.keinsci.com/research/molclus.html (accessed Aug-23, **2023**)
 
 > and More than ..........
+
+## Thanks
+
+> Thanks
+
+## License
+
+CalcNMR was developed independently by Kimariyb, a master's student at Xiamen University. CalcNMR is open source under the MIT license. This means you are free to use, modify and distribute the code.
