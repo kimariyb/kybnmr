@@ -20,11 +20,23 @@ CalcNMR is a scripting program for fully automated calculation of NMR of large m
 To implement the ideas for NMR calculations, we use the following computational chemistry program: 
 
 - Programs for doing molecular dynamics based on semi-empirical methods: `Xtb`.
-- Program for doing pre-optimization of different conformations of molecules based on molecular force fields: `Xtb`.
+- Program for doing pre-optimization of different conformations of molecules: `Xtb`.
 - Programs for doing molecular conformation optimization based on DFT theory: `Gaussian`.
 - Programs for calculating the energy of molecular conformations: `Orca`.
 - Programs for calculating the Boltzmann distribution: `Shermo`.
 - Programs for calculating NMR according to the Boltzmann distribution: `Multiwfn`.
+
+## What is the Double Check
+
+Double Check is a kind of check in the CalcNMR program to determine whether the obtained conformation meets the requirements. It is called Double Check because there are two criteria that need to be checked when checking these structures. The first criterion is to check for the presence of structures that do not make sense, that is, to check for the presence of structures that do not make chemical sense. The second criterion is to check whether there is a duplicate structure, for example, the energy difference between some structures is only 0.01 kcal/mol, and this kind of structure is regarded as a duplicate structure.
+
+Double Check helps us to find the structures that satisfy the above two cases, and finally we eliminate these structures and can proceed to the next step of the calculation.
+
+## How to installation
+
+## How to use CalcNMR
+
+## Why we need CalcNMR
 
 ## References
 
