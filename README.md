@@ -42,13 +42,20 @@ Double Check helps us to find the structures that satisfy the above two cases, a
 
 ## How to install CalcNMR
 
+> Install CalcNMR
+
 ## How to use CalcNMR
 
+> Use CalcNMR
+
 ## Why we need CalcNMR
+
+> Need CalcNMR
 
 ## References
 
 - Tian Lu, Qinxue Chen, Shermo: A general code for calculating molecular thermodynamic properties, *Comput. Theor. Chem.*, 1200, 113249 (**2021**) DOI: 10.1016/j.comptc.2021.113249
-- Tian Lu, and Chen, F. (2012), Multiwfn: A multifunctional wavefunction analyzer. *J. Comput. Chem.*, 33: 580-592. https://doi.org/10.1002/jcc.22885
+- Tian Lu, Feiwu Chen, Multiwfn: A Multifunctional Wavefunction Analyzer, *J. Comput. Chem.* 33, 580-592 (**2012**) DOI: 10.1002/jcc.22885
 - Tian Lu, Molclus program, Version 1.12, http://www.keinsci.com/research/molclus.html (accessed Aug-23, **2023**)
-- More than ..........
+
+> and More than ..........
