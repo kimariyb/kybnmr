@@ -111,3 +111,9 @@ func ParseConfigFile(configFile string) *Config {
 
 	return config
 }
+
+// DoubleCheck 用于 CalcNMR 检查构象是否合理，以及是否存在重复结构
+// @param: thresholds(float): 查找的阈值
+func DoubleCheck(thresholds float64) {
+
+}

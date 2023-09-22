@@ -147,11 +147,28 @@ func (c *CalcNMR) Run() {
 	fmt.Println()
 
 	dyConfig := calc.ParseConfigFile(c.config).DyConfig
-	// ----------------------------------------------------------------
-	// 开始运行 xtb 程序做动力学模拟
-	// ----------------------------------------------------------------
-	fmt.Println("Running xtb for dynamics simulation...")
-	calc.XtbExecuteMD(&dyConfig, c.filename)
+	// 如果当前文件夹存在 dynamic.xyz 文件，则询问是否跳过该步骤
+	isSkipDy := utils.IsSkipStep("dynamic.xyz")
+	if isSkipDy {
+		// 如果为 true，则输入 r 跳过步骤
+		fmt.Println("The dynamic.xyz file exists. Do you want to skip this step? (Enter 'r' to skip, other to continue):")
+		var input string
+		fmt.Scanln(&input)
+
+		if input == "r" {
+			fmt.Println("Skipping dynamics simulation step.")
+		} else {
+			isSkipDy = false
+		}
+	}
+
+	if !isSkipDy {
+		// ----------------------------------------------------------------
+		// 开始运行 xtb 程序做动力学模拟
+		// ----------------------------------------------------------------
+		fmt.Println("Running xtb for dynamics simulation...")
+		calc.XtbExecuteMD(&dyConfig, c.filename)
+	}
 
 	fmt.Println()
 
@@ -160,5 +177,5 @@ func (c *CalcNMR) Run() {
 	// 开始运行 crest 程序做预优化
 	// ----------------------------------------------------------------
 	fmt.Println("Running crest for pre-optimization...")
-	calc.XtbExecuteOpt(&optConfig)
+	calc.XtbExecuteOpt(&optConfig, c.filename)
 }

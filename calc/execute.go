@@ -149,14 +149,14 @@ $end
 	}
 
 	// 将 xtb 生成的文件全部移动到 temp 文件夹中
-	utils.RemoveTempFolder()
+	utils.RemoveTempFolder([]string{"CalcNMR", xyzFile, "*.ini", "xtb.trj"})
 	// 将生成的 xtb.trj 文件修改为 dynamic.xyz
 	utils.RenameFile("xtb.trj", "dynamic.xyz")
 }
 
 // XtbExecuteOpt 调用 Xtb 对体系做预优化，由于 xtb 不支持并行，因此这里直接使用 xtb 升级版 crest
 // crest 已经在本程序的 bin 目录下了，并不需要手动下载
-func XtbExecuteOpt(optConfig *OptimizedConfig) {
+func XtbExecuteOpt(optConfig *OptimizedConfig, xyzFile string) {
 	// 拿到 bin 目录下的 crest 程序的路径，并直接调整为绝对路径
 	crestPath, err := filepath.Abs(filepath.Join("bin", "crest"))
 	if err != nil {
@@ -183,4 +183,9 @@ func XtbExecuteOpt(optConfig *OptimizedConfig) {
 	}
 
 	fmt.Println("crest optimization completed successfully.")
+
+	// 将 crest 生成的文件全部移动到 temp 文件夹中
+	utils.RemoveTempFolder([]string{"dynamic.xyz", "CalcNMR", "*.ini", xyzFile, "xtb.trj", "crest_ensemble.xyz"})
+	// 将 crest_ensemble.xyz 文件修改为 pre_opt.xyz
+	utils.RenameFile("crest_ensemble.xyz", "pre_opt.xyz")
 }

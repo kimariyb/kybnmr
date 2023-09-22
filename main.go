@@ -2,6 +2,8 @@ package main
 
 import (
 	"CalcNMR/run"
+	"fmt"
+	"time"
 )
 
 /*
@@ -23,7 +25,13 @@ import (
  */
 
 func main() {
+	// 记录起始时间
+	start := time.Now()
+	// CalcNMR 主程序运行
 	calcNMR := run.NewCalcNMR()
 	calcNMR.ParseArgs()
 	calcNMR.Run()
+	// 计算时间差
+	elapsed := time.Since(start)
+	fmt.Printf("Time spent running CalcNMR: %s\n", elapsed)
 }

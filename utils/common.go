@@ -97,17 +97,15 @@ func CheckFileType(filename, fileType string) bool {
 }
 
 // RemoveTempFolder 将文件移动到临时文件夹 temp 中
-// 首先扫描程序运行的文件夹目录中的所有文件
-// 将除开 CalcNMR 主程序、xyz 文件、xtb.trj 文件、ini 文件 都移动到 temp 文件夹中
-func RemoveTempFolder() {
+// 扫描程序运行的文件夹目录中的所有文件，将指定文件都移动到 temp 文件夹中
+// 不移动目录下的任何文件夹，以及文件夹中的文件
+func RemoveTempFolder(keepFiles []string) {
 	// 获取当前目录文件夹
 	dir, err := os.Getwd()
 	if err != nil {
 		fmt.Println("Error getting current directory:", err)
 		return
 	}
-	// 需要保留的文件类型和名称列表
-	keepFiles := []string{"CalcNMR", "*.xyz", "xtb.trj", "*.ini"}
 
 	// 遍历文件夹中的所有文件
 	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -117,6 +115,11 @@ func RemoveTempFolder() {
 
 		// 判断文件是否为目录
 		if info.IsDir() {
+			// 判断是否当前目录
+			if path != dir {
+				// 忽略子目录，直接跳过
+				return filepath.SkipDir
+			}
 			return nil
 		}
 
@@ -133,7 +136,7 @@ func RemoveTempFolder() {
 			}
 		}
 
-		// 如果文件不需要保留，则移动到 temp 文件夹中
+		// 如果文件不需要保留，则移动到temp文件夹中
 		if !keep {
 			newPath := filepath.Join("temp", info.Name())
 			err := os.Rename(path, newPath)
@@ -161,4 +164,33 @@ func RenameFile(olderFileName string, newFileName string) {
 		return
 	}
 	fmt.Println("File renamed successfully.")
+}
+
+// IsSkipStep 根据当前文件夹是否存在某一文件，跳过运算时的某一步骤
+// 首先扫描当前目录下的所有文件，如果存在 skipFile 则返回 true
+// 如果不存在 skipFile，则返回 false
+func IsSkipStep(skipFile string) bool {
+	// 获取当前目录文件夹
+	dir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Error getting current directory:", err)
+		return false
+	}
+
+	// 拼接跳过文件的完整路径
+	skipFilePath := filepath.Join(dir, skipFile)
+
+	// 检查文件是否存在
+	_, err = os.Stat(skipFilePath)
+	if err == nil {
+		// 文件存在
+		return true
+	} else if os.IsNotExist(err) {
+		// 文件不存在
+		return false
+	} else {
+		// 其他错误
+		fmt.Println("Error checking skip file:", err)
+		return false
+	}
 }
