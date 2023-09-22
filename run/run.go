@@ -64,7 +64,7 @@ func (c *CalcNMR) ParseArgs() {
 // ShowHelp 展示 Help 参数
 func (c *CalcNMR) ShowHelp() {
 	helpText := `
-Usage: cnmr <input> [options]
+Usage: CalcNMR <input> [options]
 
 Input: Files with atomic coordinates (e.g., xyz files)
 
@@ -148,8 +148,17 @@ func (c *CalcNMR) Run() {
 
 	dyConfig := calc.ParseConfigFile(c.config).DyConfig
 	// ----------------------------------------------------------------
-	// 开始运行 xtb 程序
+	// 开始运行 xtb 程序做动力学模拟
 	// ----------------------------------------------------------------
 	fmt.Println("Running xtb for dynamics simulation...")
-	calc.XtbExecuteMD(dyConfig, c.filename)
+	calc.XtbExecuteMD(&dyConfig, c.filename)
+
+	fmt.Println()
+
+	optConfig := calc.ParseConfigFile(c.config).OptConfig
+	// ----------------------------------------------------------------
+	// 开始运行 crest 程序做预优化
+	// ----------------------------------------------------------------
+	fmt.Println("Running crest for pre-optimization...")
+	calc.XtbExecuteOpt(&optConfig)
 }

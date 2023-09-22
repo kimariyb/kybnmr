@@ -44,23 +44,23 @@ type DynamicsConfig struct {
 	Sccacc      float64
 }
 
+// OptimizedConfig ini 文件中优化部分的配置文件
 type OptimizedConfig struct {
-	solvent       string
-	gaupath       string
-	orcapath      string
-	preOptMethod  string
-	postOptMethod string
+	PreOptArgs  string
+	PostOptArgs string
+	Gaupath     string
+	Orcapath    string
 }
 
 type CalculateConfig struct {
-	shermopath string
+	Shermopath string
 }
 
 // Config 记录 ini 文件配置类
 type Config struct {
 	DyConfig   DynamicsConfig
-	optConfig  OptimizedConfig
-	calcConfig CalculateConfig
+	OptConfig  OptimizedConfig
+	CalcConfig CalculateConfig
 }
 
 // ParseConfigFile 解析符合条件的 ini 文件，并且返回一个 Config 对象
@@ -96,19 +96,18 @@ func ParseConfigFile(configFile string) *Config {
 	dynamicsConfig.Sccacc, _ = dynamicsSection.Key("sccacc").Float64()
 
 	// 给 optConfig 赋值
-	optConfig.gaupath = optimizedSection.Key("gaupath").String()
-	optConfig.orcapath = optimizedSection.Key("orcapath").String()
-	optConfig.preOptMethod = optimizedSection.Key("preOptMethod").String()
-	optConfig.postOptMethod = optimizedSection.Key("postMethod").String()
-	optConfig.solvent = optimizedSection.Key("solvent").String()
+	optConfig.PreOptArgs = optimizedSection.Key("preOptArgs").String()
+	optConfig.PostOptArgs = optimizedSection.Key("postOptArgs").String()
+	optConfig.Gaupath = optimizedSection.Key("gaupath").String()
+	optConfig.Orcapath = optimizedSection.Key("orcapath").String()
 
 	// 给 calcConfig 赋值
-	calcConfig.shermopath = calculateSection.Key("shermopath").String()
+	calcConfig.Shermopath = calculateSection.Key("shermopath").String()
 
 	// 给 config 赋值
 	config.DyConfig = dynamicsConfig
-	config.optConfig = optConfig
-	config.calcConfig = calcConfig
+	config.OptConfig = optConfig
+	config.CalcConfig = calcConfig
 
 	return config
 }
