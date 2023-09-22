@@ -1,6 +1,7 @@
 package run
 
 import (
+	"CalcNMR/calc"
 	"CalcNMR/utils"
 	"flag"
 	"fmt"
@@ -47,7 +48,7 @@ func (c *CalcNMR) ParseArgs() {
 	flag.BoolVar(&c.version, "version", false, "display version")
 	// 新建 help 参数，代表帮助选项，默认不显示
 	flag.BoolVar(&c.help, "help", false, "display help information")
-	// 新建 config 参数，代表配置 toml 文件，如果为空，则读取当前目录下的 config.toml
+	// 新建 config 参数，代表配置 toml 文件，如果为空，则读取当前目录下的 config.ini
 	flag.StringVar(&c.config, "config", "", "specify configuration file path")
 	// 解析参数
 	flag.Parse()
@@ -113,17 +114,17 @@ func (c *CalcNMR) Run() {
 
 	}
 
-	// 如果为空，则读取当前运行脚本的目录下的 config.toml
-	// 如果当前目录下不存在 config.toml 则报错
-	// 如果不为空，则读取目标文件，同时需要判断输入的 toml 文件是否存在，如果存在，打印读取成功
+	// 如果为空，则读取当前运行脚本的目录下的 config.ini
+	// 如果当前目录下不存在 config.ini 则报错
+	// 如果不为空，则读取目标文件，同时需要判断输入的 ini 文件是否存在，如果存在，打印读取成功
 	// 如果不存在，则打印错误
 	if c.config == "" {
-		checkConfig, configFullPath := utils.CheckFileCurrentExist("config.toml")
+		checkConfig, configFullPath := utils.CheckFileCurrentExist("config.ini")
 		if checkConfig {
 			c.config = configFullPath
 			fmt.Println("Hint: Successfully read the configuration file path: " + configFullPath)
 		} else {
-			fmt.Println("Error: The default configuration file was not found in the current directory: config.toml")
+			fmt.Println("Error: The default configuration file was not found in the current directory: config.ini")
 			fmt.Println("Hint: Please specify the configuration file path.")
 			os.Exit(1)
 		}
@@ -133,8 +134,8 @@ func (c *CalcNMR) Run() {
 		if err != nil {
 			fmt.Println("Error getting absolute path:", err)
 		}
-		// 检查输入的 config 是否为一个 toml 文件
-		checkToml := utils.CheckFileType(configFullPath, ".toml")
+		// 检查输入的 config 是否为一个 ini 文件
+		checkToml := utils.CheckFileType(configFullPath, ".ini")
 		if checkToml {
 			fmt.Println("Hint: Successfully read the configuration file path: " + configFullPath)
 		} else {
@@ -143,6 +144,12 @@ func (c *CalcNMR) Run() {
 		}
 	}
 
-	// 开始运行 xtb 程序
+	fmt.Println()
 
+	dyConfig := calc.ParseConfigFile(c.config).DyConfig
+	// ----------------------------------------------------------------
+	// 开始运行 xtb 程序
+	// ----------------------------------------------------------------
+	fmt.Println("Running xtb for dynamics simulation...")
+	calc.XtbExecuteMD(dyConfig, c.filename)
 }

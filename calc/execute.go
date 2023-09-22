@@ -2,7 +2,10 @@ package calc
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"text/template"
 )
 
 /*
@@ -30,11 +33,11 @@ func IsExistXtb() bool {
 	err := cmd.Run()
 	if err == nil {
 		// 如果调用成功，则打印 xtb has been successfully detected. 同时返回 True.
-		fmt.Println("xtb has been successfully detected.")
+		fmt.Println("Hint: xtb has been successfully detected.")
 		return true
 	} else {
 		// 如果调用失败，则打印 xtb is not detected, please install xtb. 同时返回 False
-		fmt.Println("xtb is not detected, please install xtb.")
+		fmt.Println("Error: xtb is not detected, please install xtb.")
 		return false
 	}
 }
@@ -54,8 +57,92 @@ func IsExistOrca(orcaPath string) {
 
 }
 
-func XtbExecuteMD() {
+// XtbExecuteMD 调用 xtb 程序执行分子动力学模拟
+// @param: dyConfig(DynamicsConfig)
+// @param: xybFile(string)
+// dy.inp 模板为
+// $md
+//
+//	temp=${dyConfig.temperature} # in K
+//	time=${dyConfig.time}  # in ps
+//	dump=${dyConfig.dump}  # in fs
+//	step=${dyConfig.step}  # in fs
+//	velo=${dyConfig.velo}
+//	nvt =${dyConfig.nvt}
+//	hmass=${dyConfig.hmass}
+//	shake=${dyConfig.shake}
+//	sccacc=${dyConfig.sccacc}
+//
+// $end
+func XtbExecuteMD(dyConfig DynamicsConfig, xyzFile string) {
+	// 检查 temp 文件夹是否存在
+	_, err := os.Stat("temp")
+	if os.IsNotExist(err) {
+		// 如果 temp 文件夹不存在，则创建它
+		err = os.Mkdir("temp", 0755)
+		if err != nil {
+			fmt.Println("Error creating temp directory:", err)
+			return
+		}
+	}
 
+	// 创建一个临时模板文件 md.inp
+	templateText := `$md
+	temp={{.Temperature}}
+	time={{.Time}}
+	dump={{.Dump}}
+	step={{.Step}}
+	velo={{.Velo}}
+	nvt={{.Nvt}}
+	hmass={{.Hmass}}
+	shake={{.Shake}}
+	sccacc={{.Sccacc}}
+$end
+`
+	// 在当前运行目录下的 temp 文件夹中，创建一个临时文件 md.inp
+	// 如果没有 temp 文件，则新建一个 temp 文件夹
+	tempFile, err := os.Create(filepath.Join("temp", "md.inp"))
+	if err != nil {
+		fmt.Println("Error creating temp file:", err)
+		return
+	}
+	// 最后关闭并删除 md.inp 文件
+	defer func() {
+		err := tempFile.Close()
+		if err != nil {
+			return
+		}
+		err = os.Remove(tempFile.Name())
+		if err != nil {
+			return
+		}
+	}()
+
+	// 将 dyConfig 中的数据写入 dy.inp 中
+	tmpl := template.Must(template.New("md.inp").Parse(templateText))
+	err = tmpl.Execute(tempFile, dyConfig)
+	if err != nil {
+		fmt.Println("Error writing template to file", err)
+		return
+	}
+
+	// 执行 xtb 程序
+	// 首先，检测当前环境中是否存在 xtb 程序
+	if IsExistXtb() {
+		// 如果存在，则继续执行
+		// 构建 xtb 命令行参数
+		cmdArgs := []string{xyzFile, "--input", tempFile.Name(), "--omd", "--gfn", "0"}
+		//创建 xtb 命令对象
+		cmd := exec.Command("xtb", cmdArgs...)
+		//执行 xtb 命令
+		err := cmd.Run()
+		if err != nil {
+			fmt.Println("Error executing xtb:", err)
+			return
+		}
+		// 成功结束后，打印信息
+		fmt.Println("xtb MD simulation completed successfully.")
+	}
 }
 
 func XtbExecuteOpt() {
