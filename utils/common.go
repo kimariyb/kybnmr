@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -170,6 +171,17 @@ func RenameFile(olderFileName string, newFileName string) {
 // SplitStringBySpace 根据一段字符串的空格，切割字符串，并存在一个 string[] 中，同时返回
 func SplitStringBySpace(str string) []string {
 	return strings.Split(str, " ")
+}
+
+// SplitStringByComma 根据一段字符串的 "," 切割字符串，并返回成一个 float64[]
+func SplitStringByComma(str string) []float64 {
+	valuesStr := strings.Split(str, ",")
+	values := make([]float64, len(valuesStr))
+	for i, v := range valuesStr {
+		val, _ := strconv.ParseFloat(strings.TrimSpace(v), 64)
+		values[i] = val
+	}
+	return values
 }
 
 // FormatDuration 将时间转化为特定的的格式，同时输出当前时间

@@ -32,13 +32,11 @@ import (
  */
 
 type CalcNMR struct {
-	filename      string
-	version       bool
-	help          bool
-	config        string
-	skip          string
-	preThreshold  float64
-	postThreshold float64
+	filename string
+	version  bool
+	help     bool
+	config   string
+	skip     string
 }
 
 func NewCalcNMR() *CalcNMR {
@@ -55,10 +53,6 @@ func (c *CalcNMR) ParseArgs() {
 	flag.StringVar(&c.config, "config", "", "specify configuration file path")
 	// 新建一个 skip 参数，代表是否跳过某一步骤
 	flag.StringVar(&c.skip, "skip", "", "specify a step to skip (e.g., 0: md; 1: pre-opt; 2: post-opt)")
-	// 新建一个 prethre 阈值参数，用来判断做完预优化后调用 doublecheck 的阈值
-	flag.Float64Var(&c.preThreshold, "prethre", 0.2, "threshold for invoking doubleCheck after pre-optimization")
-	// 新建一个 postthre 阈值参数，用来判断做完进一步优化后调用 doublecheck 的阈值
-	flag.Float64Var(&c.postThreshold, "postthre", 0.2, "threshold for invoking doubleCheck after post-optimization")
 	// 解析参数
 	flag.Parse()
 
@@ -81,9 +75,7 @@ Options:
   --version     Display version
   --help        Display help information
   --config      Specify configuration file path
-  --skip        Specify a step to skip (e.g., 0: md; 1: pre-opt; 2: post-opt)	
-  --prethre     threshold for invoking doubleCheck after pre-optimization
-  --postthre    threshold for invoking doubleCheck after post-optimization
+  --skip        Specify a step to skip (e.g., 0: md; 1: pre-opt; 2: post-opt)
 `
 	fmt.Println(helpText)
 }
@@ -183,7 +175,8 @@ func (c *CalcNMR) Run() {
 			fmt.Println("Error Parse xyz file:", err)
 			return
 		}
-		calc.DoubleCheck(c.preThreshold, preClusters)
+		values := utils.SplitStringByComma(optConfig.PreThreshold)
+		calc.DoubleCheck(values[0], values[1], preClusters)
 	}
 
 	// ----------------------------------------------------------------

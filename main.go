@@ -1,8 +1,10 @@
 package main
 
 import (
+	"CalcNMR/calc"
 	"CalcNMR/run"
 	"CalcNMR/utils"
+	"fmt"
 	"time"
 )
 
@@ -25,6 +27,12 @@ import (
  */
 
 func main() {
+	xyzFile, err := calc.ParseXyzFile("pre_opt.xyz")
+	if err != nil {
+		return
+	}
+	calc.DoubleCheck(0.25, 0.1, xyzFile)
+	fmt.Println("--------------------------------")
 	// 记录起始时间
 	start := time.Now()
 	// CalcNMR 主程序运行
