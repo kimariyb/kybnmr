@@ -167,35 +167,6 @@ func RenameFile(olderFileName string, newFileName string) {
 	fmt.Println("File renamed successfully.")
 }
 
-// IsSkipStep 根据当前文件夹是否存在某一文件，跳过运算时的某一步骤
-// 首先扫描当前目录下的所有文件，如果存在 skipFile 则返回 true
-// 如果不存在 skipFile，则返回 false
-func IsSkipStep(skipFile string) bool {
-	// 获取当前目录文件夹
-	dir, err := os.Getwd()
-	if err != nil {
-		fmt.Println("Error getting current directory:", err)
-		return false
-	}
-
-	// 拼接跳过文件的完整路径
-	skipFilePath := filepath.Join(dir, skipFile)
-
-	// 检查文件是否存在
-	_, err = os.Stat(skipFilePath)
-	if err == nil {
-		// 文件存在
-		return true
-	} else if os.IsNotExist(err) {
-		// 文件不存在
-		return false
-	} else {
-		// 其他错误
-		fmt.Println("Error checking skip file:", err)
-		return false
-	}
-}
-
 // SplitStringBySpace 根据一段字符串的空格，切割字符串，并存在一个 string[] 中，同时返回
 func SplitStringBySpace(str string) []string {
 	return strings.Split(str, " ")
@@ -203,9 +174,13 @@ func SplitStringBySpace(str string) []string {
 
 // FormatDuration 将时间转化为特定的的格式，同时输出当前时间
 func FormatDuration(duration time.Duration) {
-	durationString := fmt.Sprintf("%02dH-%02dM-%02dS", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60)
-	// 输出 CalcNMR 程序运行的总时间
-	fmt.Printf(durationString)
+	fmt.Println("----------------")
+	fmt.Println("Thanks for your use")
+	durationString := fmt.Sprintf("%02dh : %02dm : %02ds", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60) // 输出 CalcNMR 程序运行的总时间
+	fmt.Printf("Time spent running CalcNMR: %s\n", durationString)
 	// 展示结束语，同时输出当前时间日期，以及版权 (c)
-	fmt.Println("")
+	currentTime := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Printf("CalcNMR finished at %s. Copyright (c) Kimariyb\n", currentTime)
+	fmt.Println("----------------")
+
 }

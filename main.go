@@ -33,5 +33,4 @@ func main() {
 	calcNMR.Run()
 	// 输出时间差以及当前时间
 	utils.FormatDuration(time.Since(start))
-
 }

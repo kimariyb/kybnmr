@@ -32,10 +32,13 @@ import (
  */
 
 type CalcNMR struct {
-	filename string
-	version  bool
-	help     bool
-	config   string
+	filename      string
+	version       bool
+	help          bool
+	config        string
+	skip          string
+	preThreshold  float64
+	postThreshold float64
 }
 
 func NewCalcNMR() *CalcNMR {
@@ -50,6 +53,12 @@ func (c *CalcNMR) ParseArgs() {
 	flag.BoolVar(&c.help, "help", false, "display help information")
 	// 新建 config 参数，代表配置 toml 文件，如果为空，则读取当前目录下的 config.ini
 	flag.StringVar(&c.config, "config", "", "specify configuration file path")
+	// 新建一个 skip 参数，代表是否跳过某一步骤
+	flag.StringVar(&c.skip, "skip", "", "specify a step to skip (e.g., 0: md; 1: pre-opt; 2: post-opt)")
+	// 新建一个 prethre 阈值参数，用来判断做完预优化后调用 doublecheck 的阈值
+	flag.Float64Var(&c.preThreshold, "prethre", 0.2, "threshold for invoking doubleCheck after pre-optimization")
+	// 新建一个 postthre 阈值参数，用来判断做完进一步优化后调用 doublecheck 的阈值
+	flag.Float64Var(&c.postThreshold, "postthre", 0.2, "threshold for invoking doubleCheck after post-optimization")
 	// 解析参数
 	flag.Parse()
 
@@ -72,6 +81,9 @@ Options:
   --version     Display version
   --help        Display help information
   --config      Specify configuration file path
+  --skip        Specify a step to skip (e.g., 0: md; 1: pre-opt; 2: post-opt)	
+  --prethre     threshold for invoking doubleCheck after pre-optimization
+  --postthre    threshold for invoking doubleCheck after post-optimization
 `
 	fmt.Println(helpText)
 }
@@ -145,41 +157,44 @@ func (c *CalcNMR) Run() {
 	}
 
 	fmt.Println()
-
+	// ----------------------------------------------------------------
+	// 开始运行 xtb 程序做动力学模拟
+	// ----------------------------------------------------------------
 	dyConfig := calc.ParseConfigFile(c.config).DyConfig
-	// 如果当前文件夹存在 dynamics.xyz 文件，则询问是否跳过该步骤
-	isSkipDy := utils.IsSkipStep("dynamics.xyz")
-	if isSkipDy {
-		// 如果为 true，则输入 r 跳过步骤
-		fmt.Println("The dynamics.xyz file exists. Do you want to skip this step? (Enter 'y' to skip, other to continue):")
-		var input string
-		fmt.Scanln(&input)
-
-		if input == "y" {
-			fmt.Println("Skipping dynamics simulation step.")
-		} else {
-			isSkipDy = false
-		}
-	}
-
-	if !isSkipDy {
-		// ----------------------------------------------------------------
-		// 开始运行 xtb 程序做动力学模拟
-		// ----------------------------------------------------------------
+	if c.skip != "0" {
 		fmt.Println("Running xtb for dynamics simulation...")
 		calc.XtbExecuteMD(&dyConfig, c.filename)
 	}
 
 	fmt.Println()
-
-	optConfig := calc.ParseConfigFile(c.config).OptConfig
 	// ----------------------------------------------------------------
 	// 开始运行 crest 程序做预优化
 	// ----------------------------------------------------------------
-	fmt.Println("Running crest for pre-optimization...")
-	calc.XtbExecutePreOpt(&optConfig, "dynamics.xyz")
+	optConfig := calc.ParseConfigFile(c.config).OptConfig
+	if c.skip != "1" {
+		fmt.Println("Running crest for pre-optimization...")
+		calc.XtbExecutePreOpt(&optConfig, "dynamics.xyz")
+		// ----------------------------------------------------------------
+		// 对 crest 预优化产生的 pre-optimization 文件进行 DoubleCheck
+		// ----------------------------------------------------------------
+		// 读取生成的 pre_opt.xyz 文件
+		preClusters, err := calc.ParseXyzFile("pre_opt.xyz")
+		if err != nil {
+			fmt.Println("Error Parse xyz file:", err)
+			return
+		}
+		calc.DoubleCheck(c.preThreshold, preClusters)
+	}
 
 	// ----------------------------------------------------------------
-	// 对 crest 预优化产生的 pre-optimization 文件进行 DoubleCheck
+	// 开始运行 crest 程序做进一步优化
 	// ----------------------------------------------------------------
+	if c.skip != "2" {
+		fmt.Println("Running crest for post-optimization...")
+		calc.XtbExecutePostOpt(&optConfig, "pre_cluster.xyz")
+		// ----------------------------------------------------------------
+		// 对 crest 进一步产生的 post-optimization 文件进行 DoubleCheck
+		// ----------------------------------------------------------------
+	}
+
 }
