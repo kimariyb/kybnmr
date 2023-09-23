@@ -165,12 +165,24 @@ func (cl ClusterList) PrintClusterInFo() {
 		relativeEnergy := (cluster.Energy - minEnergy) * 627.5094
 
 		// 计算与结构阈值的差值
-		disThreshold := 0.11 // 结构阈值（根据实际情况进行调整）
-		deltaDistance := math.Abs(cluster.Energy - disThreshold)
+		// 计算 cluster1 和 cluster2 的原子间距离数组
+		disArray1 := calculateDistanceArray(cl[0].Atoms)
+		disArray2 := calculateDistanceArray(cluster.Atoms)
+
+		// 记录最大的距离差异
+		maxDiff := 0.0
+
+		// 遍历原子间距离数组，计算距离差异的最大值
+		for i := range disArray1 {
+			diff := math.Abs(disArray1[i] - disArray2[i])
+			if diff > maxDiff {
+				maxDiff = diff
+			}
+		}
 
 		// 打印 Cluster 的信息
-		fmt.Printf("#  Cluster: %d  E = %.6f a.u.  DeltaDistance = %.2f  DeltaEnergy = %.2f kcal/mol\n",
-			i+1, cluster.Energy, deltaDistance, relativeEnergy)
+		fmt.Printf("#  Cluster: %d  E = %.7f a.u.  DeltaDistance = %.2f  DeltaEnergy = %.2f kcal/mol\n",
+			i+1, cluster.Energy, maxDiff, relativeEnergy)
 	}
 }
 
@@ -318,15 +330,24 @@ func DoubleCheck(eneThreshold float64, disThreshold float64, clusters ClusterLis
 	// 创建一个新的切片来存储结果簇
 	resultClusters := make(ClusterList, 0)
 
-	// 遍历clusters中的每个簇
-	for _, cluster := range clusters {
-		// 默认假设当前簇与已有簇不相似
+	// 首先，将第一个 cluster 首先加入 resultClusters 中，作为第一个簇
+	resultClusters = append(resultClusters, clusters[0])
+
+	// 接着遍历 clusters 中除第一个以外的每个簇
+	for _, cluster := range clusters[1:] {
+		// 标识符，默认假设当前簇与已有簇不相似
 		isSimilar := false
 
-		// 检查当前簇与已有簇是否相似
-		for _, resultCluster := range resultClusters {
+		// 循环遍历 resultClusters 中的每一个簇
+		for i, resultCluster := range resultClusters {
+			// 检查当前 clusters 中的簇与 resultClusters 中的每一个簇是否相似
 			if IsSimilarToCluster(&cluster, &resultCluster, eneThreshold, disThreshold) {
+				// 如果相似，则判断两个 cluster 的能量哪个更小
 				isSimilar = true
+				// 选择能量更小的簇
+				if cluster.Energy < resultCluster.Energy {
+					resultClusters[i] = cluster
+				}
 				break
 			}
 		}
@@ -400,7 +421,7 @@ func calculateDistanceArray(geometry []Atom) []float64 {
 	// 遍历所有原子对，计算它们之间的距离并存储到 disArray 中
 	for i := 0; i < n; i++ {
 		for j := i + 1; j < n; j++ {
-			disArray[idx] = calculateDistance(geometry[i], geometry[j])
+			disArray[idx] = calculateDistance(&geometry[i], &geometry[j])
 			idx++
 		}
 	}
@@ -410,7 +431,7 @@ func calculateDistanceArray(geometry []Atom) []float64 {
 }
 
 // calculateDistance 计算两个原子之间的距离
-func calculateDistance(atom1, atom2 Atom) float64 {
+func calculateDistance(atom1, atom2 *Atom) float64 {
 	dx := atom1.X - atom2.X
 	dy := atom1.Y - atom2.Y
 	dz := atom1.Z - atom2.Z
