@@ -1,7 +1,7 @@
 package calc
 
 import (
-	"CalcNMR/utils"
+	utils "CalcNMR/utils"
 	"fmt"
 	"os"
 	"os/exec"
@@ -132,8 +132,9 @@ $end
 	if IsExistXtb() {
 		// 如果存在，则继续执行
 		// 构建 xtb 命令行参数
-		cmdArgs := []string{xyzFile, "--input", tempFile.Name(), "--omd", "--gfn", "0"}
-
+		otherArgs := utils.SplitStringBySpace(dyConfig.DynamicsArgs)
+		cmdArgs := []string{xyzFile, "--input", tempFile.Name(), dyConfig.DynamicsArgs}
+		cmdArgs = append(cmdArgs, otherArgs...)
 		//创建 xtb 命令对象
 		cmd := exec.Command("xtb", cmdArgs...)
 		cmd.Stdout = os.Stdout
@@ -144,19 +145,19 @@ $end
 			fmt.Println("Error executing xtb:", err)
 			return
 		}
+
 		// 成功结束后，打印信息
 		fmt.Println("xtb MD simulation completed successfully.")
-	}
 
-	// 将 xtb 生成的文件全部移动到 temp 文件夹中
-	utils.RemoveTempFolder([]string{"CalcNMR", xyzFile, "*.ini", "xtb.trj"})
-	// 将生成的 xtb.trj 文件修改为 dynamic.xyz
-	utils.RenameFile("xtb.trj", "dynamic.xyz")
+		// 将 xtb 生成的文件全部移动到 temp 文件夹中
+		utils.RemoveTempFolder([]string{"CalcNMR", xyzFile, "*.ini", "xtb.trj"})
+		// 将生成的 xtb.trj 文件修改为 dynamic.xyz
+		utils.RenameFile("xtb.trj", "dynamics.xyz")
+	}
 }
 
-// XtbExecuteOpt 调用 Xtb 对体系做预优化，由于 xtb 不支持并行，因此这里直接使用 xtb 升级版 crest
-// crest 已经在本程序的 bin 目录下了，并不需要手动下载
-func XtbExecuteOpt(optConfig *OptimizedConfig, xyzFile string) {
+// RunCrestOptimization 调用 crest 程序并行执行 xtb 方法
+func RunCrestOptimization(args string, inputFile string, outputFile string, finalFile string) {
 	// 拿到 bin 目录下的 crest 程序的路径，并直接调整为绝对路径
 	crestPath, err := filepath.Abs(filepath.Join("bin", "crest"))
 	if err != nil {
@@ -164,10 +165,10 @@ func XtbExecuteOpt(optConfig *OptimizedConfig, xyzFile string) {
 		return
 	}
 
-	// 根据 optConfig 配置中的内容，调用 crest 做预优化
-	cmdArgs := []string{
-		"-mdopt", "dynamic.xyz", optConfig.PreOptArgs,
-	}
+	// 根据 optConfig 配置中的内容，调用 crest 进行优化
+	otherArgs := utils.SplitStringBySpace(args)
+	cmdArgs := []string{"--mdopt", inputFile}
+	cmdArgs = append(cmdArgs, otherArgs...)
 
 	// 创建 crest 命令对象
 	cmd := exec.Command(crestPath, cmdArgs...)
@@ -175,17 +176,31 @@ func XtbExecuteOpt(optConfig *OptimizedConfig, xyzFile string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	// 执行crest命令
+	// 执行 crest 命令，如果运行 crest 报错，则直接退出，如果没有报错，则继续
 	err = cmd.Run()
 	if err != nil {
 		fmt.Println("Error executing crest:", err)
 		return
+	} else {
+		fmt.Println("crest optimization completed successfully.")
+		// 必须跳过的文件
+		mustFileName := []string{"CalcNMR", "*.ini", "xtb.trj", "crest_ensemble.xyz",
+			"dynamics.xyz", inputFile, "pre_opt.xyz", "post_opt.xyz"}
+
+		// 将 crest 生成的文件全部移动到 temp 文件夹中
+		utils.RemoveTempFolder(mustFileName)
+		// 将 crest_ensemble.xyz 文件修改为指定的输出文件名
+		utils.RenameFile(outputFile, finalFile)
 	}
+}
 
-	fmt.Println("crest optimization completed successfully.")
+// XtbExecutePreOpt 调用 Xtb 对体系做预优化，由于 xtb 不支持并行，因此这里直接使用 xtb 升级版 crest
+// crest 已经在本程序的 bin 目录下了，并不需要手动下载
+func XtbExecutePreOpt(optConfig *OptimizedConfig, xyzFile string) {
+	RunCrestOptimization(optConfig.PreOptArgs, xyzFile, "crest_ensemble.xyz", "pre_opt.xyz")
+}
 
-	// 将 crest 生成的文件全部移动到 temp 文件夹中
-	utils.RemoveTempFolder([]string{"dynamic.xyz", "CalcNMR", "*.ini", xyzFile, "xtb.trj", "crest_ensemble.xyz"})
-	// 将 crest_ensemble.xyz 文件修改为 pre_opt.xyz
-	utils.RenameFile("crest_ensemble.xyz", "pre_opt.xyz")
+// XtbExecutePostOpt 调用 xtb 对体系进行进一步优化
+func XtbExecutePostOpt(optConfig *OptimizedConfig, xyzFile string) {
+	RunCrestOptimization(optConfig.PostOptArgs, xyzFile, "crest_ensemble.xyz", "post_opt.xyz")
 }

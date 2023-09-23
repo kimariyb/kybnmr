@@ -25,23 +25,26 @@ import (
 //		hmass(int): 氢原子的质量是实际的多少倍
 //		shake(int): 将与氢有关的化学键距离都用 SHAKE 算法约束住
 //		sccacc(float): 动态 xTB 计算的准确性
+//		dynamicArgs(string): 运行 xtb 做动力学的命令
 //
 // [optimized] 使用 xtb 做预优化的配置项、使用 Gaussian 和 orca 做进一步优化的配置项
-//
+//		preOptArgs：
+//		postOptArgs:
 //
 // [calculate] 根据构象、玻尔兹曼分布计算 NMR 以及偶合参数的配置项
 
 // DynamicsConfig ini 文件中动力学部分的配置文件
 type DynamicsConfig struct {
-	Temperature float64
-	Time        float64
-	Dump        float64
-	Step        float64
-	Velo        bool
-	Nvt         bool
-	Hmass       int
-	Shake       int
-	Sccacc      float64
+	Temperature  float64
+	Time         float64
+	Dump         float64
+	Step         float64
+	Velo         bool
+	Nvt          bool
+	Hmass        int
+	Shake        int
+	Sccacc       float64
+	DynamicsArgs string
 }
 
 // OptimizedConfig ini 文件中优化部分的配置文件
@@ -94,6 +97,7 @@ func ParseConfigFile(configFile string) *Config {
 	dynamicsConfig.Shake, _ = dynamicsSection.Key("shake").Int()
 	dynamicsConfig.Hmass, _ = dynamicsSection.Key("hmass").Int()
 	dynamicsConfig.Sccacc, _ = dynamicsSection.Key("sccacc").Float64()
+	dynamicsConfig.DynamicsArgs = dynamicsSection.Key("dynamicsArgs").String()
 
 	// 给 optConfig 赋值
 	optConfig.PreOptArgs = optimizedSection.Key("preOptArgs").String()
@@ -113,6 +117,7 @@ func ParseConfigFile(configFile string) *Config {
 }
 
 // DoubleCheck 用于 CalcNMR 检查构象是否合理，以及是否存在重复结构
+// DoubleCheck 函数是整个 CalcNMR 最核心的步骤
 // @param: thresholds(float): 查找的阈值
 func DoubleCheck(thresholds float64) {
 

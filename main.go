@@ -2,7 +2,7 @@ package main
 
 import (
 	"CalcNMR/run"
-	"fmt"
+	"CalcNMR/utils"
 	"time"
 )
 
@@ -31,7 +31,7 @@ func main() {
 	calcNMR := run.NewCalcNMR()
 	calcNMR.ParseArgs()
 	calcNMR.Run()
-	// 计算时间差
-	elapsed := time.Since(start)
-	fmt.Printf("Time spent running CalcNMR: %s\n", elapsed)
+	// 输出时间差以及当前时间
+	utils.FormatDuration(time.Since(start))
+
 }

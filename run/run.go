@@ -147,15 +147,15 @@ func (c *CalcNMR) Run() {
 	fmt.Println()
 
 	dyConfig := calc.ParseConfigFile(c.config).DyConfig
-	// 如果当前文件夹存在 dynamic.xyz 文件，则询问是否跳过该步骤
-	isSkipDy := utils.IsSkipStep("dynamic.xyz")
+	// 如果当前文件夹存在 dynamics.xyz 文件，则询问是否跳过该步骤
+	isSkipDy := utils.IsSkipStep("dynamics.xyz")
 	if isSkipDy {
 		// 如果为 true，则输入 r 跳过步骤
-		fmt.Println("The dynamic.xyz file exists. Do you want to skip this step? (Enter 'r' to skip, other to continue):")
+		fmt.Println("The dynamics.xyz file exists. Do you want to skip this step? (Enter 'y' to skip, other to continue):")
 		var input string
 		fmt.Scanln(&input)
 
-		if input == "r" {
+		if input == "y" {
 			fmt.Println("Skipping dynamics simulation step.")
 		} else {
 			isSkipDy = false
@@ -177,5 +177,9 @@ func (c *CalcNMR) Run() {
 	// 开始运行 crest 程序做预优化
 	// ----------------------------------------------------------------
 	fmt.Println("Running crest for pre-optimization...")
-	calc.XtbExecuteOpt(&optConfig, c.filename)
+	calc.XtbExecutePreOpt(&optConfig, "dynamics.xyz")
+
+	// ----------------------------------------------------------------
+	// 对 crest 预优化产生的 pre-optimization 文件进行 DoubleCheck
+	// ----------------------------------------------------------------
 }

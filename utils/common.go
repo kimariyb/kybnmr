@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 /*
@@ -193,4 +194,18 @@ func IsSkipStep(skipFile string) bool {
 		fmt.Println("Error checking skip file:", err)
 		return false
 	}
+}
+
+// SplitStringBySpace 根据一段字符串的空格，切割字符串，并存在一个 string[] 中，同时返回
+func SplitStringBySpace(str string) []string {
+	return strings.Split(str, " ")
+}
+
+// FormatDuration 将时间转化为特定的的格式，同时输出当前时间
+func FormatDuration(duration time.Duration) {
+	durationString := fmt.Sprintf("%02dH-%02dM-%02dS", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60)
+	// 输出 CalcNMR 程序运行的总时间
+	fmt.Printf(durationString)
+	// 展示结束语，同时输出当前时间日期，以及版权 (c)
+	fmt.Println("")
 }
