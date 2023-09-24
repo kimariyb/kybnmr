@@ -27,11 +27,9 @@ import (
  */
 
 func main() {
-	xyzFile, err := calc.ParseXyzFile("pre_opt.xyz")
-	if err != nil {
-		return
-	}
-	calc.DoubleCheck(0.25, 0.1, xyzFile)
+	clusters, _ := calc.ParseXyzFile("pre_opt.xyz")
+	calc.DoubleCheck(0.25, 0.1, clusters)
+	// calc.DoubleCheck(0.25, 0.1, xyzFile)
 	fmt.Println("--------------------------------")
 	// 记录起始时间
 	start := time.Now()

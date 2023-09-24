@@ -1,7 +1,7 @@
 package calc
 
 import (
-	utils "CalcNMR/utils"
+	"CalcNMR/utils"
 	"fmt"
 	"os"
 	"os/exec"
