@@ -3,9 +3,11 @@ package calc
 import (
 	"CalcNMR/utils"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"text/template"
 )
 
@@ -150,7 +152,7 @@ $end
 		fmt.Println("xtb MD simulation completed successfully.")
 
 		// 将 xtb 生成的文件全部移动到 temp 文件夹中
-		utils.RemoveTempFolder([]string{"CalcNMR", xyzFile, "*.ini", "xtb.trj"})
+		utils.RemoveTempFolder([]string{"CalcNMR", xyzFile, "*.ini", "xtb.trj", "GauTemplate.gjf", "OrcaTemplate.inp"})
 		// 将生成的 xtb.trj 文件修改为 dynamic.xyz
 		utils.RenameFile("xtb.trj", "dynamics.xyz")
 	}
@@ -184,9 +186,7 @@ func RunCrestOptimization(args string, inputFile string, outputFile string, fina
 	} else {
 		fmt.Println("Crest optimization completed successfully.")
 		// 必须跳过的文件
-		SkipFileName := []string{"CalcNMR", "*.ini", "xtb.trj", "crest_ensemble.xyz",
-			"dynamics.xyz", inputFile, "pre_opt.xyz", "post_opt.xyz", "pre_clusters.xyz", "post_clusters.xyz"}
-
+		SkipFileName := []string{"CalcNMR", "*.ini", "xtb.trj", inputFile, "GauTemplate.gjf", "OrcaTemplate.inp", "*.out", "*.xyz"}
 		// 将 crest 生成的文件全部移动到 temp 文件夹中
 		utils.RemoveTempFolder(SkipFileName)
 		// 将 crest_ensemble.xyz 文件修改为指定的输出文件名
@@ -205,10 +205,75 @@ func XtbExecutePostOpt(optConfig *OptimizedConfig, xyzFile string) {
 	RunCrestOptimization(optConfig.PostOptArgs, xyzFile, "crest_ensemble.xyz", "post_opt.xyz")
 }
 
-// ExecuteGaussian 调用 Gaussian 对当前文件下的 gjf 文件运算
-// 运算的原理：首先将
-func ExecuteGaussian() {
+// ExecuteOptimization 调用指定的软件对当前文件下的 gjf 文件进行优化运算
+// 运算的原理：首先获取运行目录下的 GauTemplate.gjf，这是一个 Gaussian 输入文件的模板文件
+// 将文件中的 [GEOMETRY] 用实际的原子坐标替换后，在 thermo/opt 文件夹中生成一个新的 Gaussian gjf 输入文件
+// 接着调用 Gaussian 运行这个 gjf 输入文件后，直接在 thermo/opt 文件夹中生成 out 文件
+// Clusters 每有一个 Cluster 就按照上述方法运行一次 Gaussian，直到 Clusters 中的所有元素都被遍历完。
+// # opt freq b3lyp/6-31g* int=fine scrf(solvent=CHCl3)
+//
+// # Template file
+//
+// 0 1
+// [GEOMETRY]
+func ExecuteOptimization(softwarePath string, templateFile string, clusters ClusterList, softwareName string) {
+	// 读取模板文件内容
+	templateContent, err := ioutil.ReadFile(templateFile)
+	if err != nil {
+		fmt.Println("Error reading template file:", err)
+		return
+	}
 
+	// 创建 thermo/opt 文件夹（如果不存在）
+	optFolderPath := "thermo/opt"
+	err = os.MkdirAll(optFolderPath, 0755)
+	if err != nil {
+		fmt.Println("Error creating opt folder:", err)
+		return
+	}
+
+	for i, cluster := range clusters {
+		// 生成新的输入文件名
+		inputFileName := fmt.Sprintf("cluster-opt%d%s", i+1, filepath.Ext(templateFile))
+		// 生成新的输出文件名
+		outFileName := fmt.Sprintf("cluster-opt%d.out", i+1)
+		inputFilePath := filepath.Join(optFolderPath, inputFileName)
+
+		// 替换模板文件中的 [GEOMETRY] 标记
+		inputContent := strings.Replace(string(templateContent), "[GEOMETRY]", cluster.ToXYZString(), 1)
+		// 追加两行空格
+		inputContent += "\n\n"
+
+		// 将新的输入文件写入磁盘
+		// 请注意，一定要在末尾追加两行空格
+		err = ioutil.WriteFile(inputFilePath, []byte(inputContent), 0644)
+		if err != nil {
+			fmt.Println("Error writing input file:", err)
+			return
+		}
+
+		var cmd *exec.Cmd
+		// 调用指定的软件运行输入文件
+		if strings.EqualFold(softwareName, "Gaussian") {
+			cmd = exec.Command("bash", "-c", fmt.Sprintf("%s < %s > %s", softwarePath, inputFilePath, outFileName))
+		} else if strings.EqualFold(softwareName, "Orca") {
+			cmd = exec.Command("bash", "-c", fmt.Sprintf("%s %s > %s", softwarePath, inputFilePath, outFileName))
+		}
+
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		// 输出正在运行 xxx.gjf 或者 xxx.inp
+		fmt.Printf("Hint: %s is Running: %s", softwareName, inputFileName)
+
+		err = cmd.Run()
+		if err != nil {
+			fmt.Printf("Error executing %s: %s\n", softwareName, err)
+			return
+		}
+
+		fmt.Printf("Hint: %s calculation completed for cluster %d\n", softwareName, i+1)
+	}
+	fmt.Println()
+	fmt.Printf("Hint: %s optimization completed successfully.\n", softwareName)
 }
-
-// ExecuteOrca

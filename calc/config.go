@@ -38,6 +38,8 @@ import (
 //		postOptArgs(string):
 //		preThreshold(string):
 //		postThreshold(string):
+//		gauPath(string):
+//		orcaPath(string):
 //
 // [thermo] 根据构象、玻尔兹曼分布计算 NMR 以及偶合参数的配置项
 //

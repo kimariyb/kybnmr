@@ -1,0 +1,11 @@
+! PWPB95 D3 def2-TZVPP def2/J def2-TZVPP/C RIJCOSX tightSCF noautostart miniprint nopop
+%maxcore 2000
+%pal nprocs 8 end
+%cpcm
+smd true
+SMDsolvent "water"
+end
+* xyz 0 1
+[GEOMETRY]
+*
+

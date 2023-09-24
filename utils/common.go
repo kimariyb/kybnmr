@@ -138,7 +138,7 @@ func RemoveTempFolder(keepFiles []string) {
 			}
 		}
 
-		// 如果文件不需要保留，则移动到temp文件夹中
+		// 如果文件不需要保留，则移动到 temp 文件夹中
 		if !keep {
 			newPath := filepath.Join("temp", info.Name())
 			err := os.Rename(path, newPath)
@@ -186,7 +186,7 @@ func SplitStringByComma(str string) []float64 {
 
 // FormatDuration 将时间转化为特定的的格式，同时输出当前时间
 func FormatDuration(duration time.Duration) {
-	fmt.Println("================================================================")
+	fmt.Println()
 	fmt.Println("----------------------------------------------------------------")
 	fmt.Println("Thanks for your use !!!")
 	durationString := fmt.Sprintf("%02dh : %02dm : %02ds", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60) // 输出 CalcNMR 程序运行的总时间
@@ -195,6 +195,34 @@ func FormatDuration(duration time.Duration) {
 	currentTime := time.Now().Format("2006-01-02 15:04:05")
 	fmt.Printf("CalcNMR finished at %s. Copyright (c) Kimariyb\n", currentTime)
 	fmt.Println("----------------------------------------------------------------")
-	fmt.Println("================================================================")
+	fmt.Println()
+}
 
+// ParseSkipSteps 解析 skipSteps 字符串为整数数组
+func ParseSkipSteps(skipSteps string) []int {
+	var steps []int
+
+	if skipSteps != "" {
+		stepStrs := strings.Split(skipSteps, " ")
+		for _, stepStr := range stepStrs {
+			step, err := strconv.Atoi(stepStr)
+			if err != nil {
+				fmt.Println("Invalid skip step:", stepStr)
+			} else {
+				steps = append(steps, step)
+			}
+		}
+	}
+
+	return steps
+}
+
+// ContainsArray 判断整数数组中是否包含指定的值
+func ContainsArray(array []int, value int) bool {
+	for _, v := range array {
+		if v == value {
+			return true
+		}
+	}
+	return false
 }

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 )
 
 /*
@@ -28,6 +29,18 @@ type Atom struct {
 type Cluster struct {
 	Atoms  []Atom
 	Energy float64
+}
+
+// ToXYZString 将 cluster 对象转化为 XYZ 坐标
+func (c Cluster) ToXYZString() string {
+	var sb strings.Builder
+
+	// 写入原子坐标
+	for _, atom := range c.Atoms {
+		sb.WriteString(fmt.Sprintf("%2s \t\t%14.10f \t\t%14.10f \t\t%14.10f\n", atom.Symbol, atom.X, atom.Y, atom.Z))
+	}
+
+	return sb.String()
 }
 
 // ClusterList 定义 ClusterList 类型
@@ -59,7 +72,7 @@ func (cl ClusterList) PrintClusterInFo() {
 		// 计算相对能量（以 kcal/mol 为单位）
 		relativeEnergy := (cluster.Energy - minEnergy) * 627.51
 		// 打印 Cluster 的信息
-		fmt.Printf("# Cluster: %d\tE = %.6f a.u.\tDeltaEnergy = %.2f kcal/mol\n",
+		fmt.Printf(" # Cluster: %d\tE = %.6f a.u.\tDeltaEnergy = %.2f kcal/mol\n",
 			i+1, cluster.Energy, relativeEnergy)
 	}
 	fmt.Println()

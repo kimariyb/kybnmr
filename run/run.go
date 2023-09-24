@@ -36,9 +36,11 @@ type CalcNMR struct {
 	version  bool
 	help     bool
 	config   string
-	skip     string
-	opt      string
-	sp       string
+	md       int
+	pre      int
+	post     int
+	opt      int
+	sp       int
 }
 
 func NewCalcNMR() *CalcNMR {
@@ -53,15 +55,36 @@ func (c *CalcNMR) ParseArgs() {
 	flag.BoolVar(&c.help, "help", false, "display help information")
 	// 新建 config 参数，代表配置 toml 文件，如果为空，则读取当前目录下的 config.ini
 	flag.StringVar(&c.config, "config", "", "specify configuration file path")
-	// 新建一个 skip 参数，代表是否跳过某一步骤
-	flag.StringVar(&c.skip, "skip", "", "specify a step to skip "+
-		"(e.g., 0: md; 1: pre-opt; 2: post-opt; 3: DFT-opt/freq; 4: DFT-SP)")
 	// 新建一个 opt 参数，代表做优化和振动分析时使用什么程序，默认为 0: gaussian
-	flag.StringVar(&c.opt, "opt", "0", "Select the program to be used when doing DFT optimization and vibration analysis (e.g., 0: Gaussian; 1: Orca)")
+	flag.IntVar(&c.opt, "opt", 0, "Select the program to be used when doing DFT optimization and vibration analysis (e.g., 0: Gaussian; 1: Orca)")
 	// 新建一个 sp 参数，代表做单点时使用什么程序，默认为 1: orca
-	flag.StringVar(&c.sp, "sp", "1", "Select the program to be used when doing DFT single point (e.g., 0: Gaussian; 1: Orca)")
+	flag.IntVar(&c.sp, "sp", 1, "Select the program to be used when doing DFT single point (e.g., 0: Gaussian; 1: Orca)")
+	// 新建一个 md 参数，代表是否开启动力学模拟步骤
+	flag.IntVar(&c.md, "md", 1, "specify md option (0: false; 1: true [default])")
+	// 新建一个 pre 参数，代表是是否开启 xtb/crest 预优化步骤
+	flag.IntVar(&c.pre, "pre", 1, "specify pre option (0: false; 1: true [default])")
+	// 新建一个 post 参数，代表是否开启 xtb/crest 做进一步优化
+	flag.IntVar(&c.post, "post", 1, "specify post option (0: false; 1: true [default])")
+
 	// 解析参数
 	flag.Parse()
+
+	// 将 post，pre，md, opt, sp参数的值限制在 0 和 1 之间
+	if c.post != 0 {
+		c.post = 1
+	}
+	if c.pre != 0 {
+		c.pre = 1
+	}
+	if c.md != 0 {
+		c.md = 1
+	}
+	if c.opt != 0 {
+		c.opt = 1
+	}
+	if c.sp != 0 {
+		c.sp = 1
+	}
 
 	// 获取运行的参数
 	args := flag.Args()
@@ -82,9 +105,13 @@ Options:
   --version     Display version
   --help        Display help information
   --config      Specify configuration file path
-  --skip        Specify a step to skip (e.g., 0: md; 1: pre-opt; 2: post-opt; 3: DFT-opt/freq; 4: DFT-SP)
-  --opt         Select the program to be used when doing DFT optimization and vibration analysis (e.g., 0: Gaussian [Default]; 1: Orca)
-  --sp          Select the program to be used when doing DFT single point (e.g., 0: Gaussian; 1: Orca [Default])
+  --opt         Select the program to be used when doing DFT optimization
+                (e.g., 0: Gaussian [Default]; 1: Orca)
+  --sp          Select the program to be used when doing DFT single point 
+                (e.g., 0: Gaussian; 1: Orca [Default])
+  --md          specify md option (0: false; 1: true [Default])
+  --pre         specify pre option (0: false; 1: true [Default])
+  --post        specify post option (0: false; 1: true [Default])
 `
 	fmt.Println(helpText)
 }
@@ -157,22 +184,27 @@ func (c *CalcNMR) Run() {
 		}
 	}
 
-	fmt.Println()
+	// 获取配置信息
+	optConfig := calc.ParseConfigFile(c.config).OptConfig
+	dyConfig := calc.ParseConfigFile(c.config).DyConfig
+
 	// ----------------------------------------------------------------
 	// 开始运行 xtb 程序做动力学模拟
 	// ----------------------------------------------------------------
-	dyConfig := calc.ParseConfigFile(c.config).DyConfig
-	if c.skip != "0" {
+	if c.md == 1 {
+		// 如果 c.md 为 false，执行动力学步骤
+		// runMolecularDynamics()
+		fmt.Println()
 		fmt.Println("Running xtb for dynamics simulation...")
 		calc.XtbExecuteMD(&dyConfig, c.filename)
 	}
-
-	fmt.Println()
 	// ----------------------------------------------------------------
 	// 开始运行 crest 程序做预优化
 	// ----------------------------------------------------------------
-	optConfig := calc.ParseConfigFile(c.config).OptConfig
-	if c.skip != "1" {
+	if c.pre == 1 {
+		// 如果 c.pre 为 false，执行预优化步骤
+		// runPreOptimization()
+		fmt.Println()
 		fmt.Println("Running crest for pre-optimization...")
 		calc.XtbExecutePreOpt(&optConfig, "dynamics.xyz")
 		// 对 crest 预优化产生的 pre-optimization 文件进行 DoubleCheck
@@ -183,21 +215,22 @@ func (c *CalcNMR) Run() {
 			return
 		}
 		// 获取 doublecheck 阈值
-		threshold := utils.SplitStringByComma(optConfig.PreThreshold)
+		preThreshold := utils.SplitStringByComma(optConfig.PreThreshold)
 		// 进行 double check，同时得到 clusters
-		clusters, err := calc.DoubleCheck(threshold[0], threshold[1], preClusters)
+		preRemainClusters, err := calc.DoubleCheck(preThreshold[0], preThreshold[1], preClusters)
 		if err != nil {
 			fmt.Println("Error Running DoubleCheck", err)
 			return
 		}
 		// 写入到新的 xyz 文件中
-		calc.WriteToXyzFile(clusters, "pre_clusters.xyz")
+		calc.WriteToXyzFile(preRemainClusters, "pre_clusters.xyz")
 	}
-
 	// ----------------------------------------------------------------
 	// 开始运行 crest 程序做进一步优化
 	// ----------------------------------------------------------------
-	if c.skip != "2" {
+	if c.post == 1 {
+		// 如果 c.post 为 false，执行进一步优化步骤
+		// runFurtherOptimization()
 		fmt.Println("Running crest for post-optimization...")
 		calc.XtbExecutePostOpt(&optConfig, "pre_clusters.xyz")
 		// 对 crest 进一步产生的 post-optimization 文件进行 DoubleCheck
@@ -208,22 +241,36 @@ func (c *CalcNMR) Run() {
 			return
 		}
 		// 获取 doublecheck 阈值
-		threshold := utils.SplitStringByComma(optConfig.PostThreshold)
+		postThreshold := utils.SplitStringByComma(optConfig.PostThreshold)
 		// 进行 double check，同时得到 clusters
-		clusters, err := calc.DoubleCheck(threshold[0], threshold[1], postClusters)
+		postRemainClusters, err := calc.DoubleCheck(postThreshold[0], postThreshold[1], postClusters)
 		if err != nil {
 			fmt.Println("Error Running DoubleCheck", err)
 			return
 		}
 		// 写入到新的 xyz 文件中
-		calc.WriteToXyzFile(clusters, "post_clusters.xyz")
+		calc.WriteToXyzFile(postRemainClusters, "post_clusters.xyz")
 	}
-
 	// ----------------------------------------------------------------
 	// 开始运行 gaussian/orca 程序做 DFT 优化
 	// ----------------------------------------------------------------
-	if c.skip != "3" {
-
+	// 执行 DFT 步骤
+	postRemainClusters, err := calc.ParseXyzFile("post_clusters.xyz")
+	if err != nil {
+		fmt.Println("Error Parse xyz file:", err)
+		return
+	}
+	// runDFT()
+	fmt.Println("Running Gaussian for DFT Optimization Calculating...")
+	if c.opt == 0 {
+		// 运行 Gaussian 程序优化结构
+		calc.ExecuteOptimization(optConfig.GauPath, "GauTemplate.gjf", postRemainClusters, "gaussian")
+	} else if c.opt == 1 {
+		// 运行 Orca 程序优化结构
+		calc.ExecuteOptimization(optConfig.OrcaPath, "OrcaTemplate.inp", postRemainClusters, "orca")
+	} else {
+		// 如果没选择则报错
+		fmt.Println("Invalid option")
 	}
 
 }
