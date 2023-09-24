@@ -243,9 +243,46 @@ func ParseXyzFile(xyzFile string) (ClusterList, error) {
 	return clusters, nil
 }
 
-// WriteXyzFile 向新的 xyz 文件中写入信息
+// WriteToXyzFile 向一个标准 xyz 文件中写入信息，同时格式化 xyz 文件
+// 如果 xyzFileName 是已经存在的文件，则往文件末尾追加信息
 // @param clusters: []Cluster 需要写入的文件信息
 // @param xyzFileName: string 需要写入的 xyz 文件的名称
-func WriteXyzFile(clusters []Cluster, xyzFileName string) {
-	//
+// WriteToXyzFile 向一个标准 XYZ 文件中写入信息，同时格式化 XYZ 文件
+// 如果 xyzFileName 是已经存在的文件，则往文件末尾追加信息
+// @param clusters: []Cluster 需要写入的文件信息
+// @param xyzFileName: string 需要写入的 XYZ 文件的名称
+func WriteToXyzFile(clusters ClusterList, xyzFileName string) {
+	file, err := os.OpenFile(xyzFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	if err != nil {
+		fmt.Println("Error opening XYZ file:", err)
+		return
+	}
+	defer file.Close()
+
+	// 写入每个簇的原子数、能量和坐标
+	for _, cluster := range clusters {
+		// 写入原子数
+		_, err = file.WriteString(fmt.Sprintf("  %d\n", len(cluster.Atoms)))
+		if err != nil {
+			fmt.Println("Error writing atom count to XYZ file:", err)
+			return
+		}
+		// 写入能量
+		_, err = file.WriteString(fmt.Sprintf("\t\t%.8f\n", cluster.Energy))
+		if err != nil {
+			fmt.Println("Error writing energy to XYZ file:", err)
+			return
+		}
+
+		// 写入每个原子的坐标
+		for _, atom := range cluster.Atoms {
+			_, err = file.WriteString(fmt.Sprintf("%2s \t\t%14.10f \t\t%14.10f \t\t%14.10f\n", atom.Symbol, atom.X, atom.Y, atom.Z))
+			if err != nil {
+				fmt.Println("Error writing atom coordinates to XYZ file:", err)
+				return
+			}
+		}
+	}
+
+	fmt.Println("Hint: XYZ file written successfully.")
 }

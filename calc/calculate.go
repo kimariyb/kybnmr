@@ -1,6 +1,7 @@
 package calc
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"sort"
@@ -50,11 +51,15 @@ func (cl ClusterList) PrintClusterInFo() {
 	cl.SortCluster()
 	// 获取能量最小的 Cluster
 	minEnergy := cl[0].Energy
+	// 打印一共有多少个 Cluster 同时输出最小的 Cluster 的能量
+	fmt.Printf("The total number of clusters searched is: * %d *\n", len(cl))
+	fmt.Printf("The lowest energy is: \t%.6f a.u.\n", cl[0].Energy)
+	fmt.Println("Sorting clusters according to energy...")
 	for i, cluster := range cl {
 		// 计算相对能量（以 kcal/mol 为单位）
 		relativeEnergy := (cluster.Energy - minEnergy) * 627.51
 		// 打印 Cluster 的信息
-		fmt.Printf("# Cluster: %d	E = %.6f a.u.	DeltaEnergy = %.2f kcal/mol\n",
+		fmt.Printf("# Cluster: %d\tE = %.6f a.u.\tDeltaEnergy = %.2f kcal/mol\n",
 			i+1, cluster.Energy, relativeEnergy)
 	}
 }
@@ -70,7 +75,16 @@ func (cl ClusterList) PrintClusterInFo() {
 // @param: disThreshold(float): 查找的距离阈值
 // @param: clusters: ClusterList，通过 ParseXyzFile() 方法得到的 ClusterList
 // @return: 返回一个 ClusterList
-func DoubleCheck(eneThreshold float64, disThreshold float64, clusters ClusterList) ClusterList {
+func DoubleCheck(eneThreshold float64, disThreshold float64, clusters ClusterList) (ClusterList, error) {
+	// 检查参数有效性
+	if eneThreshold < 0 || disThreshold < 0 {
+		return nil, errors.New("threshold values must be non-negative")
+	}
+
+	if len(clusters) == 0 {
+		return nil, errors.New("empty cluster list")
+	}
+
 	// 创建一个新的切片来存储结果簇
 	resultClusters := make(ClusterList, 0)
 
@@ -105,7 +119,7 @@ func DoubleCheck(eneThreshold float64, disThreshold float64, clusters ClusterLis
 	// 打印 resultClusters 的信息
 	resultClusters.PrintClusterInFo()
 
-	return resultClusters
+	return resultClusters, nil
 }
 
 // IsSimilarToCluster 函数用于检查两个结构是否相似

@@ -166,17 +166,23 @@ func (c *CalcNMR) Run() {
 	if c.skip != "1" {
 		fmt.Println("Running crest for pre-optimization...")
 		calc.XtbExecutePreOpt(&optConfig, "dynamics.xyz")
-		// ----------------------------------------------------------------
 		// 对 crest 预优化产生的 pre-optimization 文件进行 DoubleCheck
-		// ----------------------------------------------------------------
 		// 读取生成的 pre_opt.xyz 文件
 		preClusters, err := calc.ParseXyzFile("pre_opt.xyz")
 		if err != nil {
 			fmt.Println("Error Parse xyz file:", err)
 			return
 		}
-		values := utils.SplitStringByComma(optConfig.PreThreshold)
-		calc.DoubleCheck(values[0], values[1], preClusters)
+		// 获取 doublecheck 阈值
+		threshold := utils.SplitStringByComma(optConfig.PreThreshold)
+		// 进行 double check，同时得到 clusters
+		clusters, err := calc.DoubleCheck(threshold[0], threshold[1], preClusters)
+		if err != nil {
+			fmt.Println("Error Running DoubleCheck", err)
+			return
+		}
+		// 写入到新的 xyz 文件中
+		calc.WriteToXyzFile(clusters, "pre_clusters.xyz")
 	}
 
 	// ----------------------------------------------------------------
@@ -184,10 +190,31 @@ func (c *CalcNMR) Run() {
 	// ----------------------------------------------------------------
 	if c.skip != "2" {
 		fmt.Println("Running crest for post-optimization...")
-		calc.XtbExecutePostOpt(&optConfig, "pre_cluster.xyz")
-		// ----------------------------------------------------------------
+		calc.XtbExecutePostOpt(&optConfig, "pre_clusters.xyz")
 		// 对 crest 进一步产生的 post-optimization 文件进行 DoubleCheck
-		// ----------------------------------------------------------------
+		// 读取生成的 post_opt.xyz 文件
+		postClusters, err := calc.ParseXyzFile("post_opt.xyz")
+		if err != nil {
+			fmt.Println("Error Parse xyz file:", err)
+			return
+		}
+		// 获取 doublecheck 阈值
+		threshold := utils.SplitStringByComma(optConfig.PostThreshold)
+		// 进行 double check，同时得到 clusters
+		clusters, err := calc.DoubleCheck(threshold[0], threshold[1], postClusters)
+		if err != nil {
+			fmt.Println("Error Running DoubleCheck", err)
+			return
+		}
+		// 写入到新的 xyz 文件中
+		calc.WriteToXyzFile(clusters, "post_clusters.xyz")
+	}
+
+	// ----------------------------------------------------------------
+	// 开始运行 gaussian 程序做 DFT 优化
+	// ----------------------------------------------------------------
+	if c.skip != "3" {
+
 	}
 
 }

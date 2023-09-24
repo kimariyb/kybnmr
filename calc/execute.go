@@ -185,7 +185,7 @@ func RunCrestOptimization(args string, inputFile string, outputFile string, fina
 		fmt.Println("crest optimization completed successfully.")
 		// 必须跳过的文件
 		SkipFileName := []string{"CalcNMR", "*.ini", "xtb.trj", "crest_ensemble.xyz",
-			"dynamics.xyz", inputFile, "pre_opt.xyz", "post_opt.xyz", "pre_cluster.xyz", "post_cluster.xyz"}
+			"dynamics.xyz", inputFile, "pre_opt.xyz", "post_opt.xyz", "pre_clusters.xyz", "post_clusters.xyz"}
 
 		// 将 crest 生成的文件全部移动到 temp 文件夹中
 		utils.RemoveTempFolder(SkipFileName)
