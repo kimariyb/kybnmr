@@ -37,6 +37,8 @@ type CalcNMR struct {
 	help     bool
 	config   string
 	skip     string
+	opt      string
+	sp       string
 }
 
 func NewCalcNMR() *CalcNMR {
@@ -52,7 +54,12 @@ func (c *CalcNMR) ParseArgs() {
 	// 新建 config 参数，代表配置 toml 文件，如果为空，则读取当前目录下的 config.ini
 	flag.StringVar(&c.config, "config", "", "specify configuration file path")
 	// 新建一个 skip 参数，代表是否跳过某一步骤
-	flag.StringVar(&c.skip, "skip", "", "specify a step to skip (e.g., 0: md; 1: pre-opt; 2: post-opt)")
+	flag.StringVar(&c.skip, "skip", "", "specify a step to skip "+
+		"(e.g., 0: md; 1: pre-opt; 2: post-opt; 3: DFT-opt/freq; 4: DFT-SP)")
+	// 新建一个 opt 参数，代表做优化和振动分析时使用什么程序，默认为 0: gaussian
+	flag.StringVar(&c.opt, "opt", "0", "Select the program to be used when doing DFT optimization and vibration analysis (e.g., 0: Gaussian; 1: Orca)")
+	// 新建一个 sp 参数，代表做单点时使用什么程序，默认为 1: orca
+	flag.StringVar(&c.sp, "sp", "1", "Select the program to be used when doing DFT single point (e.g., 0: Gaussian; 1: Orca)")
 	// 解析参数
 	flag.Parse()
 
@@ -75,7 +82,9 @@ Options:
   --version     Display version
   --help        Display help information
   --config      Specify configuration file path
-  --skip        Specify a step to skip (e.g., 0: md; 1: pre-opt; 2: post-opt)
+  --skip        Specify a step to skip (e.g., 0: md; 1: pre-opt; 2: post-opt; 3: DFT-opt/freq; 4: DFT-SP)
+  --opt         Select the program to be used when doing DFT optimization and vibration analysis (e.g., 0: Gaussian [Default]; 1: Orca)
+  --sp          Select the program to be used when doing DFT single point (e.g., 0: Gaussian; 1: Orca [Default])
 `
 	fmt.Println(helpText)
 }
@@ -211,7 +220,7 @@ func (c *CalcNMR) Run() {
 	}
 
 	// ----------------------------------------------------------------
-	// 开始运行 gaussian 程序做 DFT 优化
+	// 开始运行 gaussian/orca 程序做 DFT 优化
 	// ----------------------------------------------------------------
 	if c.skip != "3" {
 

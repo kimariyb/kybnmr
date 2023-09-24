@@ -186,13 +186,15 @@ func SplitStringByComma(str string) []float64 {
 
 // FormatDuration 将时间转化为特定的的格式，同时输出当前时间
 func FormatDuration(duration time.Duration) {
-	fmt.Println("----------------")
-	fmt.Println("Thanks for your use")
+	fmt.Println("================================================================")
+	fmt.Println("----------------------------------------------------------------")
+	fmt.Println("Thanks for your use !!!")
 	durationString := fmt.Sprintf("%02dh : %02dm : %02ds", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60) // 输出 CalcNMR 程序运行的总时间
 	fmt.Printf("Time spent running CalcNMR: %s\n", durationString)
 	// 展示结束语，同时输出当前时间日期，以及版权 (c)
 	currentTime := time.Now().Format("2006-01-02 15:04:05")
 	fmt.Printf("CalcNMR finished at %s. Copyright (c) Kimariyb\n", currentTime)
-	fmt.Println("----------------")
+	fmt.Println("----------------------------------------------------------------")
+	fmt.Println("================================================================")
 
 }

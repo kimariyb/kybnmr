@@ -62,6 +62,7 @@ func (cl ClusterList) PrintClusterInFo() {
 		fmt.Printf("# Cluster: %d\tE = %.6f a.u.\tDeltaEnergy = %.2f kcal/mol\n",
 			i+1, cluster.Energy, relativeEnergy)
 	}
+	fmt.Println()
 }
 
 // DoubleCheck 用于 CalcNMR 检查构象是否合理，以及是否存在重复结构，这是整个 CalcNMR 最核心的步骤
@@ -85,6 +86,12 @@ func DoubleCheck(eneThreshold float64, disThreshold float64, clusters ClusterLis
 		return nil, errors.New("empty cluster list")
 	}
 
+	// 打印 DoubleCheck 运行标志
+	fmt.Println()
+	fmt.Println("  =======================================")
+	fmt.Println("  |             Double Check            |")
+	fmt.Println("  =======================================")
+	fmt.Println()
 	// 创建一个新的切片来存储结果簇
 	resultClusters := make(ClusterList, 0)
 
@@ -178,7 +185,7 @@ func calculateDistanceMatrix(cluster *Cluster) [][]float64 {
 		distMatrix[i] = make([]float64, numAtoms)
 		for j := 0; j < numAtoms; j++ {
 			if i == j {
-				distMatrix[i][j] = 0.0 // 对角元素为0，表示同一个原子
+				distMatrix[i][j] = 0.0 // 对角元素为 0，表示同一个原子
 			} else {
 				// 计算两个原子在X、Y、Z轴上的坐标差异
 				diffX := cluster.Atoms[i].X - cluster.Atoms[j].X

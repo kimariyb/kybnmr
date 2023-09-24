@@ -182,7 +182,7 @@ func RunCrestOptimization(args string, inputFile string, outputFile string, fina
 		fmt.Println("Error executing crest:", err)
 		return
 	} else {
-		fmt.Println("crest optimization completed successfully.")
+		fmt.Println("Crest optimization completed successfully.")
 		// 必须跳过的文件
 		SkipFileName := []string{"CalcNMR", "*.ini", "xtb.trj", "crest_ensemble.xyz",
 			"dynamics.xyz", inputFile, "pre_opt.xyz", "post_opt.xyz", "pre_clusters.xyz", "post_clusters.xyz"}
@@ -204,3 +204,11 @@ func XtbExecutePreOpt(optConfig *OptimizedConfig, xyzFile string) {
 func XtbExecutePostOpt(optConfig *OptimizedConfig, xyzFile string) {
 	RunCrestOptimization(optConfig.PostOptArgs, xyzFile, "crest_ensemble.xyz", "post_opt.xyz")
 }
+
+// ExecuteGaussian 调用 Gaussian 对当前文件下的 gjf 文件运算
+// 运算的原理：首先将
+func ExecuteGaussian() {
+
+}
+
+// ExecuteOrca

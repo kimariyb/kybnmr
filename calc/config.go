@@ -39,7 +39,7 @@ import (
 //		preThreshold(string):
 //		postThreshold(string):
 //
-// [calculate] 根据构象、玻尔兹曼分布计算 NMR 以及偶合参数的配置项
+// [thermo] 根据构象、玻尔兹曼分布计算 NMR 以及偶合参数的配置项
 //
 
 // DynamicsConfig ini 文件中动力学部分的配置文件
@@ -62,19 +62,19 @@ type OptimizedConfig struct {
 	PostOptArgs   string
 	PreThreshold  string
 	PostThreshold string
-	Gaupath       string
-	Orcapath      string
+	GauPath       string
+	OrcaPath      string
 }
 
-type CalculateConfig struct {
+type ThermoConfig struct {
 	Shermopath string
 }
 
 // Config 记录 ini 文件配置类
 type Config struct {
-	DyConfig   DynamicsConfig
-	OptConfig  OptimizedConfig
-	CalcConfig CalculateConfig
+	DyConfig     DynamicsConfig
+	OptConfig    OptimizedConfig
+	ThermoConfig ThermoConfig
 }
 
 // ParseConfigFile 解析符合条件的 ini 文件，并且返回一个 Config 对象
@@ -96,7 +96,7 @@ func ParseConfigFile(configFile string) *Config {
 	// 声明一个 dynamicsConfig、OptimizedConfig、CalclateConfig
 	dynamicsConfig := DynamicsConfig{}
 	optConfig := OptimizedConfig{}
-	calcConfig := CalculateConfig{}
+	thermoConfig := ThermoConfig{}
 
 	// 给 dynamicsConfig 赋值
 	dynamicsConfig.Temperature, _ = dynamicsSection.Key("temperature").Float64()
@@ -115,16 +115,16 @@ func ParseConfigFile(configFile string) *Config {
 	optConfig.PostOptArgs = optimizedSection.Key("postOptArgs").String()
 	optConfig.PreThreshold = optimizedSection.Key("preThreshold").String()
 	optConfig.PostThreshold = optimizedSection.Key("postThreshold").String()
-	optConfig.Gaupath = optimizedSection.Key("gaupath").String()
-	optConfig.Orcapath = optimizedSection.Key("orcapath").String()
+	optConfig.GauPath = optimizedSection.Key("gauPath").String()
+	optConfig.OrcaPath = optimizedSection.Key("orcaPath").String()
 
-	// 给 calcConfig 赋值
-	calcConfig.Shermopath = calculateSection.Key("shermopath").String()
+	// 给 ThermoConfig 赋值
+	thermoConfig.Shermopath = calculateSection.Key("shermopath").String()
 
 	// 给 config 赋值
 	config.DyConfig = dynamicsConfig
 	config.OptConfig = optConfig
-	config.CalcConfig = calcConfig
+	config.ThermoConfig = thermoConfig
 
 	return config
 }
