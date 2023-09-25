@@ -11,7 +11,7 @@ import (
 
 /*
 * config.go
-* 该模块主要涉及实现 CalcNMR 运行时所需要读取配置、写入文件功能
+* 该模块主要涉及实现 KYBNMR 运行时所需要读取配置、写入文件功能
 *
 * @Method:
 *
@@ -20,7 +20,7 @@ import (
 * @Data: 2023-09-21
  */
 
-// Config 结构体，用来存储 ini 文件内的配置。在 CalcNMR 的 ini 文件中，你可以配置以下属性
+// Config 结构体，用来存储 ini 文件内的配置。在 KYBNMR 的 ini 文件中，你可以配置以下属性
 // [dynamics] 使用 xtb 做动力学的配置项
 //		temperature(float): 温度，单位为 K
 //		time(float): 时间，单位为 ps

@@ -1,4 +1,4 @@
-module CalcNMR
+module kybnmr
 
 go 1.20
 

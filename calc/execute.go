@@ -1,9 +1,9 @@
 package calc
 
 import (
-	"CalcNMR/utils"
 	"fmt"
 	"io/ioutil"
+	"kybnmr/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,21 +43,6 @@ func IsExistXtb() bool {
 		fmt.Println("Error: xtb is not detected, please install xtb.")
 		return false
 	}
-}
-
-// IsExistGaussian 检查环境变量中否存在 Gaussian 程序
-// @Param: gauPath(string): Gaussian 可执行文件的路径
-// @Return: bool
-func IsExistGaussian(gauPath string) {
-	// 根据 Gaussian 可执行文件的路径，确定 Gaussian 的执行命令
-}
-
-// IsExistOrca 检查环境变量中否存在 Orca 程序
-// @Param: orcaPath(string): Orca 可执行文件的路径
-// @Return: bool
-func IsExistOrca(orcaPath string) {
-	// 根据 Orca 可执行文件的路径，确定 Orca 的执行命令
-
 }
 
 // XtbExecuteMD 调用 xtb 程序执行分子动力学模拟
@@ -152,7 +137,7 @@ $end
 		fmt.Println("xtb MD simulation completed successfully.")
 
 		// 将 xtb 生成的文件全部移动到 temp 文件夹中
-		utils.RemoveTempFolder([]string{"CalcNMR", xyzFile, "*.ini", "xtb.trj", "GauTemplate.gjf", "OrcaTemplate.inp"})
+		utils.RemoveTempFolder([]string{"KYBNMR", xyzFile, "*.ini", "xtb.trj", "GauTemplate.gjf", "OrcaTemplate.inp"})
 		// 将生成的 xtb.trj 文件修改为 dynamic.xyz
 		utils.RenameFile("xtb.trj", "dynamics.xyz")
 	}
@@ -186,7 +171,7 @@ func RunCrestOptimization(args string, inputFile string, outputFile string, fina
 	} else {
 		fmt.Println("Crest optimization completed successfully.")
 		// 必须跳过的文件
-		SkipFileName := []string{"CalcNMR", "*.ini", "xtb.trj", inputFile, "GauTemplate.gjf", "OrcaTemplate.inp", "*.out", "*.xyz"}
+		SkipFileName := []string{"KYBNMR", "*.ini", "xtb.trj", inputFile, "GauTemplate.gjf", "OrcaTemplate.inp", "*.out", "*.xyz"}
 		// 将 crest 生成的文件全部移动到 temp 文件夹中
 		utils.RemoveTempFolder(SkipFileName)
 		// 将 crest_ensemble.xyz 文件修改为指定的输出文件名

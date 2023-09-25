@@ -10,7 +10,7 @@ import (
 
 /*
 * calculate.go
-* 该模块主要涉及实现 CalcNMR 运行时所需要的计算功能
+* 该模块主要涉及实现 KYBNMR 运行时所需要的计算功能
 *
 * @Method:
 *
@@ -78,7 +78,7 @@ func (cl ClusterList) PrintClusterInFo() {
 	fmt.Println()
 }
 
-// DoubleCheck 用于 CalcNMR 检查构象是否合理，以及是否存在重复结构，这是整个 CalcNMR 最核心的步骤
+// DoubleCheck 用于 KYBNMR 检查构象是否合理，以及是否存在重复结构，这是整个 KYBNMR 最核心的步骤
 // 将 clusters 中的第一个 cluster 或者当前 cluster 和 resultClusters 中的所有 cluster 都不相似
 // 那么这个 cluster 将被作为一个新的簇，此簇的能量、结构也等同于这个 cluster
 // 若当前 cluster 与存在 resultClusters 中的某一个 cluster 相似（能量和结构差异都同时小于自设的阈值），

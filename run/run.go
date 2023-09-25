@@ -1,28 +1,28 @@
 package run
 
 import (
-	"CalcNMR/calc"
-	"CalcNMR/utils"
 	"flag"
 	"fmt"
+	"kybnmr/calc"
+	"kybnmr/utils"
 	"os"
 	"path/filepath"
 )
 
 /*
 * run.go
-* 该模块用来处理如何在命令行中使用参数运行 CalcNMR 程序
+* 该模块用来处理如何在命令行中使用参数运行 KYBNMR 程序
 *
 * @Struct:
-*	CalcNMR: 运行 CalcNMR 所需要的参数集合，封装为一个结构体
+*	KYBNMR: 运行 KYBNMR 所需要的参数集合，封装为一个结构体
 *
 * @Method:
-*	NewCalcNMR(): 新建一个 CalcNMR 对象
-*		Return: *CalcNMR
+*	NewKYBNMR(): 新建一个 KYBNMR 对象
+*		Return: *KYBNMR
 *
-*	ParseArgs(): 解析 CalcNMR 运行所需要的参数
+*	ParseArgs(): 解析 KYBNMR 运行所需要的参数
 *
-*	ShowHelp(): 展示 Help 参数，打印运行 CalcNMR 所需要的参数信息
+*	ShowHelp(): 展示 Help 参数，打印运行 KYBNMR 所需要的参数信息
 *
 *	Run(): 起到通过命令行执行整个任务流程的作用
 *
@@ -31,7 +31,7 @@ import (
 * @Data: 2023-09-21
  */
 
-type CalcNMR struct {
+type KYBNMR struct {
 	filename string
 	version  bool
 	help     bool
@@ -43,12 +43,12 @@ type CalcNMR struct {
 	sp       int
 }
 
-func NewCalcNMR() *CalcNMR {
-	return &CalcNMR{}
+func NewKYBNMR() *KYBNMR {
+	return &KYBNMR{}
 }
 
-// ParseArgs 解析 CalcNMR 在命令行中运行所使用的参数
-func (c *CalcNMR) ParseArgs() {
+// ParseArgs 解析 KYBNMR 在命令行中运行所使用的参数
+func (c *KYBNMR) ParseArgs() {
 	// 新建 version 参数，代表版权信息，默认不显示
 	flag.BoolVar(&c.version, "version", false, "display version")
 	// 新建 help 参数，代表帮助选项，默认不显示
@@ -60,44 +60,47 @@ func (c *CalcNMR) ParseArgs() {
 	// 新建一个 sp 参数，代表做单点时使用什么程序，默认为 1: orca
 	flag.IntVar(&c.sp, "sp", 1, "Select the program to be used when doing DFT single point (e.g., 0: Gaussian; 1: Orca)")
 	// 新建一个 md 参数，代表是否开启动力学模拟步骤
-	flag.IntVar(&c.md, "md", 1, "specify md option (0: false; 1: true [default])")
+	flag.IntVar(&c.md, "md", 1, "Whether molecular dynamics simulations are performed (0: false; 1: true [Default])")
 	// 新建一个 pre 参数，代表是是否开启 xtb/crest 预优化步骤
-	flag.IntVar(&c.pre, "pre", 1, "specify pre option (0: false; 1: true [default])")
+	flag.IntVar(&c.pre, "pre", 1, "whether to use crest for post-optimization (0: false; 1: true [Default])")
 	// 新建一个 post 参数，代表是否开启 xtb/crest 做进一步优化
-	flag.IntVar(&c.post, "post", 1, "specify post option (0: false; 1: true [default])")
+	flag.IntVar(&c.post, "post", 1, "whether to use crest for post-optimization (0: false; 1: true [Default])")
 
 	// 解析参数
 	flag.Parse()
 
 	// 将 post，pre，md, opt, sp参数的值限制在 0 和 1 之间
-	if c.post != 0 {
+	if c.post != 0 && c.post != 1 {
+		fmt.Println("Warning: The parameter --post must be one of 0 and 1 !")
+		fmt.Println("If you entered a parameter other than 0 or 1, the parameter has now been adjusted to 1.")
 		c.post = 1
 	}
-	if c.pre != 0 {
+	if c.pre != 0 && c.pre != 1 {
+		fmt.Println("Warning: The parameter --pre must be one of 0 and 1 !")
+		fmt.Println("If you entered a parameter other than 0 or 1, the parameter has now been adjusted to 1.")
 		c.pre = 1
 	}
-	if c.md != 0 {
+	if c.md != 0 && c.md != 1 {
+		fmt.Println("Warning: The parameter --md must be one of 0 and 1 !")
+		fmt.Println("If you entered a parameter other than 0 or 1, the parameter has now been adjusted to 1.")
 		c.md = 1
 	}
-	if c.opt != 0 {
-		c.opt = 1
+	if c.opt != 0 && c.opt != 1 {
+		fmt.Println("Warning: The parameter --opt must be one of 0 and 1 !")
+		fmt.Println("If you entered a parameter other than 0 or 1, the parameter has now been adjusted to 0.")
+		c.opt = 0
 	}
-	if c.sp != 0 {
+	if c.sp != 0 && c.sp != 1 {
+		fmt.Println("Warning: The parameter --sp must be one of 0 and 1 !")
+		fmt.Println("If you entered a parameter other than 0 or 1, the parameter has now been adjusted to 1.")
 		c.sp = 1
-	}
-
-	// 获取运行的参数
-	args := flag.Args()
-	// 如果参数字段大于 0 将第一个元素赋值为 filename
-	if len(args) > 0 {
-		c.filename = args[0]
 	}
 }
 
 // ShowHelp 展示 Help 参数
-func (c *CalcNMR) ShowHelp() {
+func (c *KYBNMR) ShowHelp() {
 	helpText := `
-Usage: CalcNMR <input> [options]
+Usage: KYBNMR <input> [options]
 
 Input: Files with atomic coordinates (e.g., xyz files)
 
@@ -109,15 +112,18 @@ Options:
                 (e.g., 0: Gaussian [Default]; 1: Orca)
   --sp          Select the program to be used when doing DFT single point 
                 (e.g., 0: Gaussian; 1: Orca [Default])
-  --md          specify md option (0: false; 1: true [Default])
-  --pre         specify pre option (0: false; 1: true [Default])
-  --post        specify post option (0: false; 1: true [Default])
+  --md          Whether molecular dynamics simulations are performed 
+                (0: false; 1: true [Default])
+  --pre         Whether to use crest for pre-optimization
+                (0: false; 1: true [Default])
+  --post        Whether to use crest for post-optimization
+                (0: false; 1: true [Default])
 `
 	fmt.Println(helpText)
 }
 
 // Run 起到通过命令行执行整个任务流程的作用
-func (c *CalcNMR) Run() {
+func (c *KYBNMR) Run() {
 	if c.version {
 		utils.ShowHead()
 		os.Exit(0)
@@ -268,9 +274,6 @@ func (c *CalcNMR) Run() {
 	} else if c.opt == 1 {
 		// 运行 Orca 程序优化结构
 		calc.ExecuteOptimization(optConfig.OrcaPath, "OrcaTemplate.inp", postRemainClusters, "orca")
-	} else {
-		// 如果没选择则报错
-		fmt.Println("Invalid option")
 	}
 
 }

@@ -11,7 +11,7 @@ import (
 
 /*
 * common.go
-* 该模块是 CalcNMR 程序所需要使用到的工具函数等
+* 该模块是 KYBNMR 程序所需要使用到的工具函数等
 *
 * @Method:
 *	ShowHead(): 展示程序头，包括作者信息、版本信息等
@@ -31,14 +31,14 @@ func ShowHead() (string, string) {
 	asciiArt := `
       -----------------------------------------------------------
      |                   =====================                   |
-     |                          CalcNMR                          |
+     |                          KYBNMR                          |
      |                   =====================                   |
      |                        Kimari Y.B.                        |
      |        School of Electronic Science and Engineering       |
      |                     XiaMen University                     |
       -----------------------------------------------------------
-      * CalcNMR version ` + version + ` on ` + date + `
-      * Homepage is https://github.com/kimariyb/CalcNMR
+      * KYBNMR version ` + version + ` on ` + date + `
+      * Homepage is https://github.com/kimariyb/kybnmr
 	`
 
 	fmt.Println(asciiArt)
@@ -189,11 +189,11 @@ func FormatDuration(duration time.Duration) {
 	fmt.Println()
 	fmt.Println("----------------------------------------------------------------")
 	fmt.Println("Thanks for your use !!!")
-	durationString := fmt.Sprintf("%02dh : %02dm : %02ds", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60) // 输出 CalcNMR 程序运行的总时间
-	fmt.Printf("Time spent running CalcNMR: %s\n", durationString)
+	durationString := fmt.Sprintf("%02dh : %02dm : %02ds", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60) // 输出 KYBNMR 程序运行的总时间
+	fmt.Printf("Time spent running KYBNMR: %s\n", durationString)
 	// 展示结束语，同时输出当前时间日期，以及版权 (c)
 	currentTime := time.Now().Format("2006-01-02 15:04:05")
-	fmt.Printf("CalcNMR finished at %s. Copyright (c) Kimariyb\n", currentTime)
+	fmt.Printf("KYBNMR finished at %s. Copyright (c) Kimariyb\n", currentTime)
 	fmt.Println("----------------------------------------------------------------")
 	fmt.Println()
 }
