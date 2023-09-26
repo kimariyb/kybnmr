@@ -26,7 +26,7 @@ To implement the ideas for NMR calculations, we use the following computational 
 - Programs for calculating the Boltzmann distribution: `Shermo`.
 - Programs for calculating NMR according to the Boltzmann distribution: `Multiwfn`.
 
-<img src="figure/app.svg">
+<img src="figure/app.png">
 
 ## What is the Double Check
 
