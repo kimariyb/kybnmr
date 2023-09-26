@@ -2,8 +2,6 @@ package main
 
 import (
 	"kybnmr/run"
-	"kybnmr/utils"
-	"time"
 )
 
 /*
@@ -25,12 +23,7 @@ import (
  */
 
 func main() {
-	// 记录起始时间
-	start := time.Now()
 	// KYBNMR 主程序运行
 	KYBNMR := run.NewKYBNMR()
-	KYBNMR.ParseArgs()
-	KYBNMR.Run()
-	// 输出时间差以及当前时间
-	utils.FormatDuration(time.Since(start))
+	KYBNMR.ParseArgsToRun()
 }

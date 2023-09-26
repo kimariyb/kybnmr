@@ -156,6 +156,11 @@ func RemoveTempFolder(keepFiles []string) {
 	}
 }
 
+// RemoveOutFile 移动 out 文件至指定文件夹
+func RemoveOutFile(targetFolder string, ) {
+
+}
+
 // RenameFile 工具函数，修改文件的名字
 // @param: olderFileName(string): 旧的文件名
 // @param: newFileName(string): 新的文件名

@@ -1,12 +1,14 @@
 package run
 
 import (
-	"flag"
 	"fmt"
+	"github.com/urfave/cli/v2"
 	"kybnmr/calc"
 	"kybnmr/utils"
+	"log"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 /*
@@ -32,248 +34,302 @@ import (
  */
 
 type KYBNMR struct {
-	filename string
-	version  bool
-	help     bool
-	config   string
-	md       int
-	pre      int
-	post     int
-	opt      int
-	sp       int
+	input   string
+	version bool
+	help    bool
+	config  string
+	md      IsOpenOption
+	pre     IsOpenOption
+	post    IsOpenOption
+	opt     DFTOption
+	sp      DFTOption
 }
+
+type IsOpenOption int
+
+const (
+	OpenFalse IsOpenOption = 0
+	OpenTure  IsOpenOption = 1
+)
+
+type DFTOption int
+
+const (
+	DFTGaussian DFTOption = 0
+	DFTOrca     DFTOption = 1
+)
 
 func NewKYBNMR() *KYBNMR {
 	return &KYBNMR{}
 }
 
-// ParseArgs 解析 KYBNMR 在命令行中运行所使用的参数
-func (c *KYBNMR) ParseArgs() {
-	// 新建 version 参数，代表版权信息，默认不显示
-	flag.BoolVar(&c.version, "version", false, "display version")
-	// 新建 help 参数，代表帮助选项，默认不显示
-	flag.BoolVar(&c.help, "help", false, "display help information")
-	// 新建 config 参数，代表配置 toml 文件，如果为空，则读取当前目录下的 config.ini
-	flag.StringVar(&c.config, "config", "", "specify configuration file path")
-	// 新建一个 opt 参数，代表做优化和振动分析时使用什么程序，默认为 0: gaussian
-	flag.IntVar(&c.opt, "opt", 0, "Select the program to be used when doing DFT optimization and vibration analysis (e.g., 0: Gaussian; 1: Orca)")
-	// 新建一个 sp 参数，代表做单点时使用什么程序，默认为 1: orca
-	flag.IntVar(&c.sp, "sp", 1, "Select the program to be used when doing DFT single point (e.g., 0: Gaussian; 1: Orca)")
-	// 新建一个 md 参数，代表是否开启动力学模拟步骤
-	flag.IntVar(&c.md, "md", 1, "Whether molecular dynamics simulations are performed (0: false; 1: true [Default])")
-	// 新建一个 pre 参数，代表是是否开启 xtb/crest 预优化步骤
-	flag.IntVar(&c.pre, "pre", 1, "whether to use crest for post-optimization (0: false; 1: true [Default])")
-	// 新建一个 post 参数，代表是否开启 xtb/crest 做进一步优化
-	flag.IntVar(&c.post, "post", 1, "whether to use crest for post-optimization (0: false; 1: true [Default])")
+// 首先判断输入的文件是否为空，如果为空，则直接打印错误
+// 接着判断传入的文件是否为一个 xyz 文件，xyz 文件是一个记录分子原子信息的文件
+// 如果传入的是一个 xyz 文件，但是没有扫描到，则报错。
+func (k *KYBNMR) checkInputFile() error {
+	if k.input == "" {
+		return fmt.Errorf("error: please provide an input filename")
+	}
 
-	// 解析参数
-	flag.Parse()
+	inputFullPath, err := filepath.Abs(k.input)
+	if err != nil {
+		return fmt.Errorf("error getting absolute path: %w", err)
+	}
 
-	// 将 post，pre，md, opt, sp参数的值限制在 0 和 1 之间
-	if c.post != 0 && c.post != 1 {
-		fmt.Println("Warning: The parameter --post must be one of 0 and 1 !")
-		fmt.Println("If you entered a parameter other than 0 or 1, the parameter has now been adjusted to 1.")
-		c.post = 1
+	checkXyz := utils.CheckFileType(inputFullPath, ".xyz")
+	if !checkXyz {
+		return fmt.Errorf("error: please enter an input file of type xyz")
 	}
-	if c.pre != 0 && c.pre != 1 {
-		fmt.Println("Warning: The parameter --pre must be one of 0 and 1 !")
-		fmt.Println("If you entered a parameter other than 0 or 1, the parameter has now been adjusted to 1.")
-		c.pre = 1
-	}
-	if c.md != 0 && c.md != 1 {
-		fmt.Println("Warning: The parameter --md must be one of 0 and 1 !")
-		fmt.Println("If you entered a parameter other than 0 or 1, the parameter has now been adjusted to 1.")
-		c.md = 1
-	}
-	if c.opt != 0 && c.opt != 1 {
-		fmt.Println("Warning: The parameter --opt must be one of 0 and 1 !")
-		fmt.Println("If you entered a parameter other than 0 or 1, the parameter has now been adjusted to 0.")
-		c.opt = 0
-	}
-	if c.sp != 0 && c.sp != 1 {
-		fmt.Println("Warning: The parameter --sp must be one of 0 and 1 !")
-		fmt.Println("If you entered a parameter other than 0 or 1, the parameter has now been adjusted to 1.")
-		c.sp = 1
-	}
+
+	fmt.Println("Hint: Successfully read the input file path: " + inputFullPath)
+	return nil
 }
 
-// ShowHelp 展示 Help 参数
-func (c *KYBNMR) ShowHelp() {
-	helpText := `
-Usage: KYBNMR <input> [options]
+// 如果为空，则读取当前运行脚本的目录下的 config.ini
+// 如果当前目录下不存在 config.ini 则报错
+// 如果不为空，则读取目标文件，同时需要判断输入的 ini 文件是否存在，如果存在，打印读取成功
+// 如果不存在，则打印错误
+func (k *KYBNMR) checkConfigFile() error {
+	if k.config == "" {
+		checkConfig, configFullPath := utils.CheckFileCurrentExist("config.ini")
+		if !checkConfig {
+			return fmt.Errorf("error: the default configuration file was not found in the current directory: config.ini")
+		}
+		k.config = configFullPath
+		fmt.Println("Hint: Successfully read the config file path: " + configFullPath)
+	}
 
-Input: Files with atomic coordinates (e.g., xyz files)
+	return nil
+}
 
-Options:
-  --version     Display version
-  --help        Display help information
-  --config      Specify configuration file path
-  --opt         Select the program to be used when doing DFT optimization
-                (e.g., 0: Gaussian [Default]; 1: Orca)
-  --sp          Select the program to be used when doing DFT single point 
-                (e.g., 0: Gaussian; 1: Orca [Default])
-  --md          Whether molecular dynamics simulations are performed 
-                (0: false; 1: true [Default])
-  --pre         Whether to use crest for pre-optimization
-                (0: false; 1: true [Default])
-  --post        Whether to use crest for post-optimization
-                (0: false; 1: true [Default])
+func (k *KYBNMR) runPreOptimization(optConfig *calc.OptimizedConfig) error {
+	calc.XtbExecutePreOpt(optConfig, "dynamics.xyz")
+	// 对 crest 预优化产生的 pre-optimization 文件进行 DoubleCheck
+	// 读取生成的 pre_opt.xyz 文件
+	preClusters, err := calc.ParseXyzFile("pre_opt.xyz")
+	if err != nil {
+		fmt.Println("Error Parse xyz file:", err)
+		return nil
+	}
+	// 获取 doublecheck 阈值
+	preThreshold := utils.SplitStringByComma(optConfig.PreThreshold)
+	// 进行 double check，同时得到 clusters
+	preRemainClusters, err := calc.DoubleCheck(preThreshold[0], preThreshold[1], preClusters)
+	if err != nil {
+		fmt.Println("Error Running DoubleCheck", err)
+		return nil
+	}
+	// 写入到新的 xyz 文件中
+	calc.WriteToXyzFile(preRemainClusters, "pre_clusters.xyz")
+	return nil
+}
+
+func (k *KYBNMR) runFurtherOptimization(optConfig *calc.OptimizedConfig) error {
+	fmt.Println("Running crest for post-optimization...")
+	calc.XtbExecutePostOpt(optConfig, "pre_clusters.xyz")
+	// 对 crest 进一步产生的 post-optimization 文件进行 DoubleCheck
+	// 读取生成的 post_opt.xyz 文件
+	postClusters, err := calc.ParseXyzFile("post_opt.xyz")
+	if err != nil {
+		fmt.Println("Error Parse xyz file:", err)
+		return nil
+	}
+	// 获取 doublecheck 阈值
+	postThreshold := utils.SplitStringByComma(optConfig.PostThreshold)
+	// 进行 double check，同时得到 clusters
+	postRemainClusters, err := calc.DoubleCheck(postThreshold[0], postThreshold[1], postClusters)
+	if err != nil {
+		fmt.Println("Error Running DoubleCheck", err)
+		return nil
+	}
+	// 写入到新的 xyz 文件中
+	calc.WriteToXyzFile(postRemainClusters, "post_clusters.xyz")
+	return nil
+}
+
+func (k *KYBNMR) ParseArgsToRun() {
+	// EXAMPLE: Override a template
+	cli.AppHelpTemplate = `NAME:
+   {{.Name}} - {{.Usage}}
+USAGE:
+   {{.HelpName}} <input> {{if .VisibleFlags}}[OPTIONS]{{end}}{{if .Commands}} [command]{{end}}
+   {{if len .Authors}}
+AUTHOR:
+   {{range .Authors}}{{ . }}{{end}}
+   {{end}}{{if .Commands}}
+COMMANDS:
+{{range .Commands}}{{if not .HideHelp}}   {{join .Names ", "}}{{ "\t"}}{{.Usage}}{{ "\n" }}{{end}}{{end}}{{end}}{{if .VisibleFlags}}
+OPTIONS:
+   {{range .VisibleFlags}}{{.}}
+   {{end}}{{end}}{{if .Copyright }}
+COPYRIGHT:
+   {{.Copyright}}
+   {{end}}{{if .Version}}
+VERSION:
+   {{.Version}}
+   {{end}}
 `
-	fmt.Println(helpText)
+	cli.VersionFlag = &cli.BoolFlag{
+		Name:    "version",
+		Aliases: []string{"v"},
+		Usage:   "print only the version",
+	}
+	cli.HelpFlag = &cli.BoolFlag{
+		Name:    "help",
+		Aliases: []string{"h"},
+		Usage:   "show help",
+	}
+	app := &cli.App{
+		Name:    "kybnmr",
+		Usage:   "A scripting program for fully automated calculation of NMR of large molecules",
+		Version: "v1.0.0(dev)",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:        "config",
+				Aliases:     []string{"c"},
+				Value:       "config.ini",
+				Usage:       "Load configuration from `FILE`",
+				Destination: &k.config,
+			},
+			&cli.IntFlag{
+				Name:        "opt",
+				Usage:       "DFT optimization and vibration procedure",
+				Aliases:     []string{"o"},
+				Destination: (*int)(&k.opt),
+				Value:       int(DFTGaussian),
+			},
+			&cli.IntFlag{
+				Name:        "sp",
+				Usage:       "DFT single point procedure",
+				Aliases:     []string{"s"},
+				Destination: (*int)(&k.sp),
+				Value:       int(DFTOrca),
+			},
+			&cli.IntFlag{
+				Name:        "md",
+				Usage:       "whether molecular dynamics simulations are performed",
+				Aliases:     []string{"m"},
+				Destination: (*int)(&k.md),
+				Value:       int(OpenTure),
+			},
+			&cli.IntFlag{
+				Name:        "pre",
+				Usage:       "whether to use crest for pre-optimization",
+				Aliases:     []string{"pr"},
+				Destination: (*int)(&k.pre),
+				Value:       int(OpenTure),
+			},
+			&cli.IntFlag{
+				Name:        "post",
+				Usage:       "whether to use crest for post-optimization",
+				Aliases:     []string{"po"},
+				Destination: (*int)(&k.post),
+				Value:       int(OpenTure),
+			},
+		},
+		Action: func(c *cli.Context) error {
+			if c.NArg() == 0 {
+				return fmt.Errorf("missing required argument: <input>")
+			}
+			k.input = c.Args().Get(0)
+			// Run the workflow
+			if err := k.Run(); err != nil {
+				log.Fatal(err)
+			}
+			return nil
+		},
+		Authors: []*cli.Author{
+			{
+				Name:  "Kimari Y.B.",
+				Email: "kimariyb@163.com",
+			},
+		},
+	}
+
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Run 起到通过命令行执行整个任务流程的作用
-func (c *KYBNMR) Run() {
-	if c.version {
-		utils.ShowHead()
-		os.Exit(0)
-	}
-
-	if c.help {
-		c.ShowHelp()
-		os.Exit(0)
-	}
+func (k *KYBNMR) Run() error {
+	// 记录起始时间
+	start := time.Now()
 
 	// 展示程序的基础信息、版本信息以及作者信息
 	utils.ShowHead()
 
-	// 首先判断输入的 filename 是否为空，如果为空，则直接打印错误
-	// 接着判断传入的 filename 是否为一个 xyz 文件，xyz 文件是一个记录分子原子信息的文件
-	// 如果传入的是一个 xyz 文件，但是没有扫描到，则报错。
-	if c.filename == "" {
-		fmt.Println("Error: Please provide an input filename!")
-		os.Exit(1)
-	} else {
-		// 将 filename 转变为一个绝对路径
-		inputFullPath, err := filepath.Abs(c.filename)
-		if err != nil {
-			fmt.Println("Error getting absolute path:", err)
-		}
-		// 检查输入的 filename 是否为一个 xyz 文件
-		checkXyz := utils.CheckFileType(inputFullPath, ".xyz")
-		if checkXyz {
-			fmt.Println("Hint: Successfully read the input file path: " + inputFullPath)
-		} else {
-			fmt.Println("Error: Please enter an input file of type xyz.")
-			os.Exit(1)
-		}
-
+	if err := k.checkInputFile(); err != nil {
+		return err
 	}
 
-	// 如果为空，则读取当前运行脚本的目录下的 config.ini
-	// 如果当前目录下不存在 config.ini 则报错
-	// 如果不为空，则读取目标文件，同时需要判断输入的 ini 文件是否存在，如果存在，打印读取成功
-	// 如果不存在，则打印错误
-	if c.config == "" {
-		checkConfig, configFullPath := utils.CheckFileCurrentExist("config.ini")
-		if checkConfig {
-			c.config = configFullPath
-			fmt.Println("Hint: Successfully read the configuration file path: " + configFullPath)
-		} else {
-			fmt.Println("Error: The default configuration file was not found in the current directory: config.ini")
-			fmt.Println("Hint: Please specify the configuration file path.")
-			os.Exit(1)
-		}
-	} else {
-		// 将 c.config 转化为一个绝对路径
-		configFullPath, err := filepath.Abs(c.config)
-		if err != nil {
-			fmt.Println("Error getting absolute path:", err)
-		}
-		// 检查输入的 config 是否为一个 ini 文件
-		checkToml := utils.CheckFileType(configFullPath, ".ini")
-		if checkToml {
-			fmt.Println("Hint: Successfully read the configuration file path: " + configFullPath)
-		} else {
-			fmt.Println("Error: Please enter a toml type configuration file.")
-			os.Exit(1)
-		}
+	if err := k.checkConfigFile(); err != nil {
+		return err
 	}
 
 	// 获取配置信息
-	optConfig := calc.ParseConfigFile(c.config).OptConfig
-	dyConfig := calc.ParseConfigFile(c.config).DyConfig
+	optConfig := calc.ParseConfigFile(k.config).OptConfig
+	dyConfig := calc.ParseConfigFile(k.config).DyConfig
 
 	// ----------------------------------------------------------------
 	// 开始运行 xtb 程序做动力学模拟
 	// ----------------------------------------------------------------
-	if c.md == 1 {
-		// 如果 c.md 为 false，执行动力学步骤
-		// runMolecularDynamics()
-		fmt.Println()
+	fmt.Println()
+	if k.md == OpenTure {
 		fmt.Println("Running xtb for dynamics simulation...")
-		calc.XtbExecuteMD(&dyConfig, c.filename)
+		if err := calc.XtbExecuteMD(&dyConfig, k.input); err != nil {
+			return err
+		}
+	} else if k.md == OpenFalse {
+		fmt.Println("Skipped dynamics simulation")
 	}
 	// ----------------------------------------------------------------
 	// 开始运行 crest 程序做预优化
 	// ----------------------------------------------------------------
-	if c.pre == 1 {
-		// 如果 c.pre 为 false，执行预优化步骤
-		// runPreOptimization()
-		fmt.Println()
+	fmt.Println()
+	if k.pre == OpenTure {
 		fmt.Println("Running crest for pre-optimization...")
-		calc.XtbExecutePreOpt(&optConfig, "dynamics.xyz")
-		// 对 crest 预优化产生的 pre-optimization 文件进行 DoubleCheck
-		// 读取生成的 pre_opt.xyz 文件
-		preClusters, err := calc.ParseXyzFile("pre_opt.xyz")
-		if err != nil {
-			fmt.Println("Error Parse xyz file:", err)
-			return
+		if err := k.runPreOptimization(&optConfig); err != nil {
+			return err
 		}
-		// 获取 doublecheck 阈值
-		preThreshold := utils.SplitStringByComma(optConfig.PreThreshold)
-		// 进行 double check，同时得到 clusters
-		preRemainClusters, err := calc.DoubleCheck(preThreshold[0], preThreshold[1], preClusters)
-		if err != nil {
-			fmt.Println("Error Running DoubleCheck", err)
-			return
-		}
-		// 写入到新的 xyz 文件中
-		calc.WriteToXyzFile(preRemainClusters, "pre_clusters.xyz")
+	} else if k.pre == OpenFalse {
+		fmt.Println("Skipped pre-optimization")
 	}
 	// ----------------------------------------------------------------
 	// 开始运行 crest 程序做进一步优化
 	// ----------------------------------------------------------------
-	if c.post == 1 {
-		// 如果 c.post 为 false，执行进一步优化步骤
-		// runFurtherOptimization()
+	fmt.Println()
+	if k.post == OpenTure {
 		fmt.Println("Running crest for post-optimization...")
-		calc.XtbExecutePostOpt(&optConfig, "pre_clusters.xyz")
-		// 对 crest 进一步产生的 post-optimization 文件进行 DoubleCheck
-		// 读取生成的 post_opt.xyz 文件
-		postClusters, err := calc.ParseXyzFile("post_opt.xyz")
-		if err != nil {
-			fmt.Println("Error Parse xyz file:", err)
-			return
+		if err := k.runFurtherOptimization(&optConfig); err != nil {
+			return err
 		}
-		// 获取 doublecheck 阈值
-		postThreshold := utils.SplitStringByComma(optConfig.PostThreshold)
-		// 进行 double check，同时得到 clusters
-		postRemainClusters, err := calc.DoubleCheck(postThreshold[0], postThreshold[1], postClusters)
-		if err != nil {
-			fmt.Println("Error Running DoubleCheck", err)
-			return
-		}
-		// 写入到新的 xyz 文件中
-		calc.WriteToXyzFile(postRemainClusters, "post_clusters.xyz")
+	} else if k.post == OpenFalse {
+		fmt.Println("Skipped post-optimization")
 	}
+
+	postRemainClusters, err := calc.ParseXyzFile("post_clusters.xyz")
+	if err != nil {
+		return fmt.Errorf("error parsing xyz file: %w", err)
+	}
+
 	// ----------------------------------------------------------------
 	// 开始运行 gaussian/orca 程序做 DFT 优化
 	// ----------------------------------------------------------------
 	// 执行 DFT 步骤
-	postRemainClusters, err := calc.ParseXyzFile("post_clusters.xyz")
-	if err != nil {
-		fmt.Println("Error Parse xyz file:", err)
-		return
-	}
-	// runDFT()
+	fmt.Println()
 	fmt.Println("Running Gaussian for DFT Optimization Calculating...")
-	if c.opt == 0 {
-		// 运行 Gaussian 程序优化结构
-		calc.ExecuteOptimization(optConfig.GauPath, "GauTemplate.gjf", postRemainClusters, "gaussian")
-	} else if c.opt == 1 {
-		// 运行 Orca 程序优化结构
-		calc.ExecuteOptimization(optConfig.OrcaPath, "OrcaTemplate.inp", postRemainClusters, "orca")
+	if k.opt == DFTGaussian {
+		err = calc.RunDFTOptimization(optConfig.GauPath, "GauTemplate.gjf", postRemainClusters, "gaussian")
+	} else if k.opt == DFTOrca {
+		err = calc.RunDFTOptimization(optConfig.OrcaPath, "OrcaTemplate.inp", postRemainClusters, "orca")
+	}
+	if err != nil {
+		return fmt.Errorf("error running DFT optimization: %w", err)
 	}
 
+	// 输出时间差以及当前时间
+	utils.FormatDuration(time.Since(start))
+
+	return nil
 }

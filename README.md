@@ -1,8 +1,8 @@
-# CalcNMR
+# KYBNMR
 
 NMR calculations have long been the subject of research by chemical researchers. From the 1990s, when DFT (Density Functional Theory) theory was proposed, to the present time, many theoretical chemists have continuously improved the theoretical calculation methods, and NMR Spectrum can also be calculated by DFT theory.
 
-CalcNMR is a scripting program for fully automated calculation of NMR of large molecules by Kimariyb. 
+KYBNMR is a scripting program for fully automated calculation of NMR of large molecules by Kimariyb. 
 
 ## Ideas for NMR calculations
 
@@ -30,7 +30,7 @@ To implement the ideas for NMR calculations, we use the following computational 
 
 ## What is the Double Check
 
-Double Check is a kind of check in the CalcNMR program to determine whether the obtained conformation meets the requirements. 
+Double Check is a kind of check in the KYBNMR program to determine whether the obtained conformation meets the requirements. 
 
 It is called Double Check because there are two criteria that need to be checked when checking these structures. 
 
@@ -40,17 +40,17 @@ The second criterion is to check whether there is a duplicate structure, for exa
 
 Double Check helps us to find the structures that satisfy the above two cases, and finally we eliminate these structures and can proceed to the next step of the calculation.
 
-## How to install CalcNMR
+## How to install KYBNMR
 
-> Install CalcNMR
+> Install KYBNMR
 
-## How to use CalcNMR
+## How to use KYBNMR
 
-> Use CalcNMR
+> Use KYBNMR
 
-## Why we need CalcNMR
+## Why we need KYBNMR
 
-> Need CalcNMR
+> Need KYBNMR
 
 ## References
 
@@ -66,4 +66,4 @@ Double Check helps us to find the structures that satisfy the above two cases, a
 
 ## License
 
-CalcNMR was developed independently by Kimariyb, a master's student at Xiamen University. CalcNMR is open source under the MIT license. This means you are free to use, modify and distribute the code.
+KYBNMR was developed independently by Kimariyb, a master's student at Xiamen University. KYBNMR is open source under the MIT license. This means you are free to use, modify and distribute the code.

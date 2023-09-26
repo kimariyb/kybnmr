@@ -62,7 +62,7 @@ func IsExistXtb() bool {
 //	sccacc=${dyConfig.sccacc}
 //
 // $end
-func XtbExecuteMD(dyConfig *DynamicsConfig, xyzFile string) {
+func XtbExecuteMD(dyConfig *DynamicsConfig, xyzFile string) error {
 	// 检查 temp 文件夹是否存在
 	_, err := os.Stat("temp")
 	if os.IsNotExist(err) {
@@ -70,7 +70,7 @@ func XtbExecuteMD(dyConfig *DynamicsConfig, xyzFile string) {
 		err = os.Mkdir("temp", 0755)
 		if err != nil {
 			fmt.Println("Error creating temp directory:", err)
-			return
+			return nil
 		}
 	}
 
@@ -92,7 +92,7 @@ $end
 	tempFile, err := os.Create(filepath.Join("temp", "md.inp"))
 	if err != nil {
 		fmt.Println("Error creating temp file:", err)
-		return
+		return nil
 	}
 	// 最后关闭并删除 md.inp 文件
 	defer func() {
@@ -111,7 +111,7 @@ $end
 	err = tmpl.Execute(tempFile, dyConfig)
 	if err != nil {
 		fmt.Println("Error writing template to file", err)
-		return
+		return nil
 	}
 
 	// 执行 xtb 程序
@@ -130,17 +130,19 @@ $end
 		err := cmd.Run()
 		if err != nil {
 			fmt.Println("Error executing xtb:", err)
-			return
+			return nil
 		}
 
 		// 成功结束后，打印信息
 		fmt.Println("xtb MD simulation completed successfully.")
 
 		// 将 xtb 生成的文件全部移动到 temp 文件夹中
-		utils.RemoveTempFolder([]string{"KYBNMR", xyzFile, "*.ini", "xtb.trj", "GauTemplate.gjf", "OrcaTemplate.inp"})
+		utils.RemoveTempFolder([]string{"KYBNMR", "kybnmr", xyzFile, "*.ini", "xtb.trj", "GauTemplate.gjf", "OrcaTemplate.inp"})
 		// 将生成的 xtb.trj 文件修改为 dynamic.xyz
 		utils.RenameFile("xtb.trj", "dynamics.xyz")
 	}
+
+	return nil
 }
 
 // RunCrestOptimization 调用 crest 程序并行执行 xtb 方法
@@ -171,7 +173,7 @@ func RunCrestOptimization(args string, inputFile string, outputFile string, fina
 	} else {
 		fmt.Println("Crest optimization completed successfully.")
 		// 必须跳过的文件
-		SkipFileName := []string{"KYBNMR", "*.ini", "xtb.trj", inputFile, "GauTemplate.gjf", "OrcaTemplate.inp", "*.out", "*.xyz"}
+		SkipFileName := []string{"KYBNMR", "kybnmr", "*.ini", "xtb.trj", inputFile, "GauTemplate.gjf", "OrcaTemplate.inp", "*.out", "*.xyz"}
 		// 将 crest 生成的文件全部移动到 temp 文件夹中
 		utils.RemoveTempFolder(SkipFileName)
 		// 将 crest_ensemble.xyz 文件修改为指定的输出文件名
@@ -190,7 +192,7 @@ func XtbExecutePostOpt(optConfig *OptimizedConfig, xyzFile string) {
 	RunCrestOptimization(optConfig.PostOptArgs, xyzFile, "crest_ensemble.xyz", "post_opt.xyz")
 }
 
-// ExecuteOptimization 调用指定的软件对当前文件下的 gjf 文件进行优化运算
+// RunDFTOptimization 调用指定的软件对当前文件下的 gjf 文件进行优化运算
 // 运算的原理：首先获取运行目录下的 GauTemplate.gjf，这是一个 Gaussian 输入文件的模板文件
 // 将文件中的 [GEOMETRY] 用实际的原子坐标替换后，在 thermo/opt 文件夹中生成一个新的 Gaussian gjf 输入文件
 // 接着调用 Gaussian 运行这个 gjf 输入文件后，直接在 thermo/opt 文件夹中生成 out 文件
@@ -201,12 +203,12 @@ func XtbExecutePostOpt(optConfig *OptimizedConfig, xyzFile string) {
 //
 // 0 1
 // [GEOMETRY]
-func ExecuteOptimization(softwarePath string, templateFile string, clusters ClusterList, softwareName string) {
+func RunDFTOptimization(softwarePath string, templateFile string, clusters ClusterList, softwareName string) error {
 	// 读取模板文件内容
 	templateContent, err := ioutil.ReadFile(templateFile)
 	if err != nil {
 		fmt.Println("Error reading template file:", err)
-		return
+		return nil
 	}
 
 	// 创建 thermo/opt 文件夹（如果不存在）
@@ -214,7 +216,7 @@ func ExecuteOptimization(softwarePath string, templateFile string, clusters Clus
 	err = os.MkdirAll(optFolderPath, 0755)
 	if err != nil {
 		fmt.Println("Error creating opt folder:", err)
-		return
+		return nil
 	}
 
 	for i, cluster := range clusters {
@@ -234,7 +236,7 @@ func ExecuteOptimization(softwarePath string, templateFile string, clusters Clus
 		err = ioutil.WriteFile(inputFilePath, []byte(inputContent), 0644)
 		if err != nil {
 			fmt.Println("Error writing input file:", err)
-			return
+			return nil
 		}
 
 		var cmd *exec.Cmd
@@ -249,16 +251,18 @@ func ExecuteOptimization(softwarePath string, templateFile string, clusters Clus
 		cmd.Stderr = os.Stderr
 
 		// 输出正在运行 xxx.gjf 或者 xxx.inp
-		fmt.Printf("Hint: %s is Running: %s", softwareName, inputFileName)
+		fmt.Printf("Hint: %s is Running: %s\n", softwareName, inputFileName)
 
 		err = cmd.Run()
 		if err != nil {
 			fmt.Printf("Error executing %s: %s\n", softwareName, err)
-			return
+			return nil
 		}
 
 		fmt.Printf("Hint: %s calculation completed for cluster %d\n", softwareName, i+1)
 	}
 	fmt.Println()
 	fmt.Printf("Hint: %s optimization completed successfully.\n", softwareName)
+
+	return nil
 }
