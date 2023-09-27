@@ -68,15 +68,16 @@ type OptimizedConfig struct {
 	OrcaPath      string
 }
 
-type ThermoConfig struct {
-	Shermopath string
+type OtherConfig struct {
+	Shermopath   string
+	MultiwfnPath string
 }
 
 // Config 记录 ini 文件配置类
 type Config struct {
-	DyConfig     DynamicsConfig
-	OptConfig    OptimizedConfig
-	ThermoConfig ThermoConfig
+	DyConfig  DynamicsConfig
+	OptConfig OptimizedConfig
+	OthConfig OtherConfig
 }
 
 // ParseConfigFile 解析符合条件的 ini 文件，并且返回一个 Config 对象
@@ -98,7 +99,7 @@ func ParseConfigFile(configFile string) *Config {
 	// 声明一个 dynamicsConfig、OptimizedConfig、CalclateConfig
 	dynamicsConfig := DynamicsConfig{}
 	optConfig := OptimizedConfig{}
-	thermoConfig := ThermoConfig{}
+	otherConfig := OtherConfig{}
 
 	// 给 dynamicsConfig 赋值
 	dynamicsConfig.Temperature, _ = dynamicsSection.Key("temperature").Float64()
@@ -121,12 +122,13 @@ func ParseConfigFile(configFile string) *Config {
 	optConfig.OrcaPath = optimizedSection.Key("orcaPath").String()
 
 	// 给 ThermoConfig 赋值
-	thermoConfig.Shermopath = calculateSection.Key("shermopath").String()
+	otherConfig.Shermopath = calculateSection.Key("shermopath").String()
+	otherConfig.MultiwfnPath = calculateSection.Key("multiwfnPath").String()
 
 	// 给 config 赋值
 	config.DyConfig = dynamicsConfig
 	config.OptConfig = optConfig
-	config.ThermoConfig = thermoConfig
+	config.OthConfig = otherConfig
 
 	return config
 }

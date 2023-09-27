@@ -152,7 +152,7 @@ func (k *KYBNMR) ParseArgsToRun() {
 	cli.AppHelpTemplate = `NAME:
    {{.Name}} - {{.Usage}}
 USAGE:
-   {{.HelpName}} <input> {{if .VisibleFlags}}[OPTIONS]{{end}}{{if .Commands}} [command]{{end}}
+   {{.HelpName}} {{if .VisibleFlags}}[OPTIONS]{{end}}{{if .Commands}} [command] <input> {{end}}
    {{if len .Authors}}
 AUTHOR:
    {{range .Authors}}{{ . }}{{end}}
@@ -318,7 +318,7 @@ func (k *KYBNMR) Run() error {
 	// ----------------------------------------------------------------
 	// 执行 DFT 步骤
 	fmt.Println()
-	fmt.Println("Running Gaussian for DFT Optimization Calculating...")
+	fmt.Println("Running Gaussian/Orca for DFT Optimization Calculating...")
 	if k.opt == DFTGaussian {
 		err = calc.RunDFTOptimization(optConfig.GauPath, "GauTemplate.gjf", postRemainClusters, "gaussian")
 	} else if k.opt == DFTOrca {
@@ -326,6 +326,23 @@ func (k *KYBNMR) Run() error {
 	}
 	if err != nil {
 		return fmt.Errorf("error running DFT optimization: %w", err)
+	}
+
+	// 读取 thermo/opt 下的所有 out 文件，并且将其转化为 ClusterList 对象
+
+	// ----------------------------------------------------------------
+	// 开始运行 gaussian/orca 程序做 DFT 单点能计算
+	// ----------------------------------------------------------------
+	// 执行 DFT 步骤
+	fmt.Println()
+	fmt.Println("Running Gaussian/Orca for DFT Single Point Energy Calculating...")
+	if k.sp == DFTGaussian {
+		err = calc.RunDFTSinglePoint(optConfig.GauPath, "GauTemplate.gjf", postRemainClusters, "gaussian")
+	} else if k.sp == DFTOrca {
+		err = calc.RunDFTSinglePoint(optConfig.OrcaPath, "OrcaTemplate.inp", postRemainClusters, "orca")
+	}
+	if err != nil {
+		return fmt.Errorf("error running DFT single point: %w", err)
 	}
 
 	// 输出时间差以及当前时间

@@ -12,7 +12,7 @@ KYBNMR is a scripting program for fully automated calculation of NMR of large mo
 4. This can then be used to calculate the Boltzmann distribution of the target molecule at a specific temperature based on the energies (generally the free energy) of the different conformations.
 5. Finally, the NMR of the target molecule is obtained by first calculating the NMR of each conformation and then averaging the NMR of all conformations weighted according to the Boltzmann distribution.
 
-<img src="figure/flow.png" width="70%">
+<img src="figure/flow.png" width="65%">
 
 
 ## Implementation of NMR calculations

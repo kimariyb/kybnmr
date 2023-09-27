@@ -137,7 +137,7 @@ $end
 		fmt.Println("xtb MD simulation completed successfully.")
 
 		// 将 xtb 生成的文件全部移动到 temp 文件夹中
-		utils.RemoveTempFolder([]string{"KYBNMR", "kybnmr", xyzFile, "*.ini", "xtb.trj", "GauTemplate.gjf", "OrcaTemplate.inp"})
+		utils.MoveAllFileButKeepFile([]string{"KYBNMR", "kybnmr", xyzFile, "*.ini", "xtb.trj", "GauTemplate.gjf", "OrcaTemplate.inp"}, "temp")
 		// 将生成的 xtb.trj 文件修改为 dynamic.xyz
 		utils.RenameFile("xtb.trj", "dynamics.xyz")
 	}
@@ -175,7 +175,7 @@ func RunCrestOptimization(args string, inputFile string, outputFile string, fina
 		// 必须跳过的文件
 		SkipFileName := []string{"KYBNMR", "kybnmr", "*.ini", "xtb.trj", inputFile, "GauTemplate.gjf", "OrcaTemplate.inp", "*.out", "*.xyz"}
 		// 将 crest 生成的文件全部移动到 temp 文件夹中
-		utils.RemoveTempFolder(SkipFileName)
+		utils.MoveAllFileButKeepFile(SkipFileName, "temp")
 		// 将 crest_ensemble.xyz 文件修改为指定的输出文件名
 		utils.RenameFile(outputFile, finalFile)
 	}
@@ -240,6 +240,7 @@ func RunDFTOptimization(softwarePath string, templateFile string, clusters Clust
 		}
 
 		var cmd *exec.Cmd
+
 		// 调用指定的软件运行输入文件
 		if strings.EqualFold(softwareName, "Gaussian") {
 			cmd = exec.Command("bash", "-c", fmt.Sprintf("%s < %s > %s", softwarePath, inputFilePath, outFileName))
@@ -264,5 +265,83 @@ func RunDFTOptimization(softwarePath string, templateFile string, clusters Clust
 	fmt.Println()
 	fmt.Printf("Hint: %s optimization completed successfully.\n", softwareName)
 
+	// 将所有生成的 opt 文件都放进 ./thermo/opt 中
+	utils.MoveFileForType(".out", "thermo/opt")
+
 	return nil
+}
+
+// RunDFTSinglePoint 运行 DFT 程序批量计算单点能
+func RunDFTSinglePoint(softwarePath, templateFile string, clusters ClusterList, softwareName string) error {
+	// 读取模板文件内容
+	templateContent, err := ioutil.ReadFile(templateFile)
+	if err != nil {
+		fmt.Println("Error reading template file:", err)
+		return nil
+	}
+
+	// 创建 thermo/sp 文件夹（如果不存在）
+	optFolderPath := "thermo/sp"
+	err = os.MkdirAll(optFolderPath, 0755)
+	if err != nil {
+		fmt.Println("Error creating opt folder:", err)
+		return nil
+	}
+
+	for i, cluster := range clusters {
+		// 生成新的输入文件名
+		inputFileName := fmt.Sprintf("cluster-opt%d%s", i+1, filepath.Ext(templateFile))
+		// 生成新的输出文件名
+		outFileName := fmt.Sprintf("cluster-opt%d.out", i+1)
+		inputFilePath := filepath.Join(optFolderPath, inputFileName)
+
+		// 替换模板文件中的 [GEOMETRY] 标记
+		inputContent := strings.Replace(string(templateContent), "[GEOMETRY]", cluster.ToXYZString(), 1)
+		// 追加两行空格
+		inputContent += "\n\n"
+
+		// 将新的输入文件写入磁盘
+		// 请注意，一定要在末尾追加两行空格
+		err = ioutil.WriteFile(inputFilePath, []byte(inputContent), 0644)
+		if err != nil {
+			fmt.Println("Error writing input file:", err)
+			return nil
+		}
+
+		var cmd *exec.Cmd
+
+		// 调用指定的软件运行输入文件
+		if strings.EqualFold(softwareName, "Gaussian") {
+			cmd = exec.Command("bash", "-c", fmt.Sprintf("%s < %s > %s", softwarePath, inputFilePath, outFileName))
+		} else if strings.EqualFold(softwareName, "Orca") {
+			cmd = exec.Command("bash", "-c", fmt.Sprintf("%s %s > %s", softwarePath, inputFilePath, outFileName))
+		}
+
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		// 输出正在运行 xxx.gjf 或者 xxx.inp
+		fmt.Printf("Hint: %s is Running: %s\n", softwareName, inputFileName)
+
+		err = cmd.Run()
+		if err != nil {
+			fmt.Printf("Error executing %s: %s\n", softwareName, err)
+			return nil
+		}
+
+		fmt.Printf("Hint: %s calculation completed for cluster %d\n", softwareName, i+1)
+	}
+	fmt.Println()
+	fmt.Printf("Hint: %s single point energy completed successfully.\n", softwareName)
+
+	// 将所有生成的 opt 文件都放进 ./thermo/sp 中
+	utils.MoveFileForType(".out", "thermo/sp")
+
+	return nil
+}
+
+// ExecuteMultiwfnToClusters 调用 Multiwfn 得到 ClusterList
+// 首先使用 Multiwfn 对指定目录下的所有的
+func ExecuteMultiwfnToClusters() ClusterList {
+	return ClusterList{}
 }

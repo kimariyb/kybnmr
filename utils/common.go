@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -98,10 +99,75 @@ func CheckFileType(filename, fileType string) bool {
 	return true
 }
 
-// RemoveTempFolder 将文件移动到临时文件夹 temp 中
-// 扫描程序运行的文件夹目录中的所有文件，将指定文件都移动到 temp 文件夹中
+// moveFile 移动文件
+// 将源文件移动到目标路径，并删除源文件
+// 参数：
+//   - sourcePath：源文件路径
+//   - destPath：目标文件路径
+//
+// 返回值：
+//   - error：如果移动文件过程中发生错误，则返回相应的错误信息；否则返回 nil
+func moveFile(sourcePath, destPath string) error {
+	err := os.Rename(sourcePath, destPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// MoveFileForType 移动当前文件夹下的所有某一类型的文件至指定文件夹
 // 不移动目录下的任何文件夹，以及文件夹中的文件
-func RemoveTempFolder(keepFiles []string) {
+func MoveFileForType(fileType string, targetFolder string) {
+	// 获取当前目录
+	currentDir, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Error getting current directory: %v\n", err)
+		return
+	}
+
+	// 遍历当前文件夹中的文件
+	err = filepath.WalkDir(currentDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// 如果当前路径是文件夹，则跳过
+		if d.IsDir() {
+			// 判断是否当前目录
+			if path != currentDir {
+				// 忽略子目录，直接跳过
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		// 获取文件的扩展名
+		fileExt := strings.ToLower(filepath.Ext(path))
+		// 如果文件的扩展名与目标类型匹配，则移动文件
+		if fileExt == strings.ToLower(fileType) {
+			// 构建目标文件路径
+			destPath := filepath.Join(targetFolder, d.Name())
+			// 移动文件
+			err := moveFile(path, destPath)
+			if err != nil {
+				fmt.Printf("Failed to move file: %s\n", err)
+			} else {
+				fmt.Printf("Move file successfully: %s\n", path)
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		fmt.Printf("Error walking directory: %s\n", err)
+	}
+}
+
+// MoveAllFileButKeepFile
+// 扫描程序运行的文件夹目录中的所有文件，将除了指定文件之外的文件都移动到指定文件夹中
+// 不移动目录下的任何文件夹，以及文件夹中的文件
+func MoveAllFileButKeepFile(keepFiles []string, targetFolder string) {
 	// 获取当前目录文件夹
 	dir, err := os.Getwd()
 	if err != nil {
@@ -110,13 +176,13 @@ func RemoveTempFolder(keepFiles []string) {
 	}
 
 	// 遍历文件夹中的所有文件
-	err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		// 判断文件是否为目录
-		if info.IsDir() {
+		if d.IsDir() {
 			// 判断是否当前目录
 			if path != dir {
 				// 忽略子目录，直接跳过
@@ -128,7 +194,7 @@ func RemoveTempFolder(keepFiles []string) {
 		// 判断文件是否需要保留
 		keep := false
 		for _, pattern := range keepFiles {
-			match, err := filepath.Match(pattern, info.Name())
+			match, err := filepath.Match(pattern, d.Name())
 			if err != nil {
 				return err
 			}
@@ -138,12 +204,14 @@ func RemoveTempFolder(keepFiles []string) {
 			}
 		}
 
-		// 如果文件不需要保留，则移动到 temp 文件夹中
+		// 如果文件不需要保留，则移动到指定文件夹中
 		if !keep {
-			newPath := filepath.Join("temp", info.Name())
-			err := os.Rename(path, newPath)
+			newPath := filepath.Join(targetFolder, d.Name())
+			err := moveFile(path, newPath)
 			if err != nil {
-				fmt.Println("Error moving file:", err)
+				fmt.Printf("Failed to move file: %s\n", err)
+			} else {
+				fmt.Printf("Move file successfully: %s\n", path)
 			}
 		}
 
@@ -154,11 +222,6 @@ func RemoveTempFolder(keepFiles []string) {
 		fmt.Println("Error walking directory:", err)
 		return
 	}
-}
-
-// RemoveOutFile 移动 out 文件至指定文件夹
-func RemoveOutFile(targetFolder string, ) {
-
 }
 
 // RenameFile 工具函数，修改文件的名字
