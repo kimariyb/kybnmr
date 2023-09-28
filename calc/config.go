@@ -180,7 +180,7 @@ func ParseXyzFile(xyzFile string) (ClusterList, error) {
 
 			// 为当前结构创建原子切片
 			atoms = make([]Atom, 0, numAtoms)
-			energy = 0.0
+			energy = 0.0 // 将能量置为空
 			continue
 		}
 
@@ -188,7 +188,8 @@ func ParseXyzFile(xyzFile string) (ClusterList, error) {
 			// 解析能量行
 			energy, err = strconv.ParseFloat(strings.TrimSpace(line), 64)
 			if err != nil {
-				return nil, fmt.Errorf("invalid energy rows：%s", line)
+				// 如果能量行中不是数字而是字符，则将其存为 0.0
+				energy = 0.0
 			}
 			continue
 		}

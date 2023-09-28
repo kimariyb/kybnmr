@@ -272,6 +272,7 @@ func RunDFTOptimization(softwarePath string, templateFile string, clusters Clust
 }
 
 // RunDFTSinglePoint 运行 DFT 程序批量计算单点能
+// 再调用 RunDFTOptimization 方法后，会马上将
 func RunDFTSinglePoint(softwarePath, templateFile string, clusters ClusterList, softwareName string) error {
 	// 读取模板文件内容
 	templateContent, err := ioutil.ReadFile(templateFile)
@@ -340,8 +341,8 @@ func RunDFTSinglePoint(softwarePath, templateFile string, clusters ClusterList, 
 	return nil
 }
 
-// ExecuteMultiwfnToClusters 调用 Multiwfn 得到 ClusterList
-// 首先使用 Multiwfn 对指定目录下的所有的
-func ExecuteMultiwfnToClusters() ClusterList {
-	return ClusterList{}
+// GetFileFromMTF
+// 使用 Multiwfn 处理 out 文件得到 orca 的 inp 文件或 gaussian 的 gjf 文件
+func GetFileFromMTF(targetFileType string, sourceFile string) {
+
 }
