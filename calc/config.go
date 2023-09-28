@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"gopkg.in/ini.v1"
+	"kybnmr/utils"
 	"os"
 	"strconv"
 	"strings"
@@ -12,8 +13,6 @@ import (
 /*
 * config.go
 * 该模块主要涉及实现 KYBNMR 运行时所需要读取配置、写入文件功能
-*
-* @Method:
 *
 * @Author: Kimariyb
 * @Address: XiaMen University
@@ -41,7 +40,7 @@ import (
 //		gauPath(string):
 //		orcaPath(string):
 //
-// [thermo] 根据构象、玻尔兹曼分布计算 NMR 以及偶合参数的配置项
+// [single] 根据构象、玻尔兹曼分布计算 NMR 以及偶合参数的配置项
 //
 
 // DynamicsConfig ini 文件中动力学部分的配置文件
@@ -68,16 +67,17 @@ type OptimizedConfig struct {
 	OrcaPath      string
 }
 
-type OtherConfig struct {
-	Shermopath   string
-	MultiwfnPath string
+type SingleConfig struct {
+	Shermopath      string
+	MultiwfnPath    string
+	MultiwfnCommand []string
 }
 
 // Config 记录 ini 文件配置类
 type Config struct {
 	DyConfig  DynamicsConfig
 	OptConfig OptimizedConfig
-	OthConfig OtherConfig
+	SpConfig  SingleConfig
 }
 
 // ParseConfigFile 解析符合条件的 ini 文件，并且返回一个 Config 对象
@@ -89,17 +89,17 @@ func ParseConfigFile(configFile string) *Config {
 	if err != nil {
 		return nil
 	}
-	// 分别解析 ini 文件中的 [dynamics]、[optimized]、[calculate] 组分别存储在
-	// DynamicsConfig、OptimizedConfig、CalculateConfig 结构体中
-	// 最后将 DynamicsConfig、OptimizedConfig、CalculateConfig 结构体存储在 Config 中
+	// 分别解析 ini 文件中的 [dynamics]、[optimized]、[single] 组分别存储在
+	// DynamicsConfig、OptimizedConfig、SingleConfig 结构体中
+	// 最后将 DynamicsConfig、OptimizedConfig、SingleConfig 结构体存储在 Config 中
 	dynamicsSection := iniFile.Section("dynamics")
 	optimizedSection := iniFile.Section("optimized")
-	calculateSection := iniFile.Section("calculate")
+	singleSection := iniFile.Section("single")
 
-	// 声明一个 dynamicsConfig、OptimizedConfig、CalclateConfig
+	// 声明一个 dynamicsConfig、OptimizedConfig、SingleConfig
 	dynamicsConfig := DynamicsConfig{}
 	optConfig := OptimizedConfig{}
-	otherConfig := OtherConfig{}
+	singleConfig := SingleConfig{}
 
 	// 给 dynamicsConfig 赋值
 	dynamicsConfig.Temperature, _ = dynamicsSection.Key("temperature").Float64()
@@ -122,13 +122,14 @@ func ParseConfigFile(configFile string) *Config {
 	optConfig.OrcaPath = optimizedSection.Key("orcaPath").String()
 
 	// 给 ThermoConfig 赋值
-	otherConfig.Shermopath = calculateSection.Key("shermopath").String()
-	otherConfig.MultiwfnPath = calculateSection.Key("multiwfnPath").String()
+	singleConfig.Shermopath = singleSection.Key("shermopath").String()
+	singleConfig.MultiwfnPath = singleSection.Key("multiwfnPath").String()
+	singleConfig.MultiwfnCommand = utils.ReadCommandToSlice(singleSection.Key("multiwfnCommand").String())
 
 	// 给 config 赋值
 	config.DyConfig = dynamicsConfig
 	config.OptConfig = optConfig
-	config.OthConfig = otherConfig
+	config.SpConfig = singleConfig
 
 	return config
 }

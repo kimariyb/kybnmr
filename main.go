@@ -14,9 +14,6 @@ import (
 *		  二者相加得到水环境下的高精度自由能
 * [每一步都需要经过 KYBNMR 的 Double Check 检测，结构集是否合格]
 *
-* @Method:
-* 	main(): 主程序入口，主函数必须通过某些参数才能执行
-*
 * @Author: Kimariyb
 * @Address: XiaMen University
 * @Data: 2023-09-20

@@ -12,8 +12,6 @@ import (
 * calculate.go
 * 该模块主要涉及实现 KYBNMR 运行时所需要的计算功能
 *
-* @Method:
-*
 * @Author: Kimariyb
 * @Address: XiaMen University
 * @Data: 2023-09-21

@@ -15,19 +15,6 @@ import (
 * run.go
 * 该模块用来处理如何在命令行中使用参数运行 KYBNMR 程序
 *
-* @Struct:
-*	KYBNMR: 运行 KYBNMR 所需要的参数集合，封装为一个结构体
-*
-* @Method:
-*	NewKYBNMR(): 新建一个 KYBNMR 对象
-*		Return: *KYBNMR
-*
-*	ParseArgs(): 解析 KYBNMR 运行所需要的参数
-*
-*	ShowHelp(): 展示 Help 参数，打印运行 KYBNMR 所需要的参数信息
-*
-*	Run(): 起到通过命令行执行整个任务流程的作用
-*
 * @Author: Kimariyb
 * @Address: XiaMen University
 * @Data: 2023-09-21
@@ -270,7 +257,7 @@ func (k *KYBNMR) Run() error {
 	// 获取配置信息
 	optConfig := calc.ParseConfigFile(k.config).OptConfig
 	dyConfig := calc.ParseConfigFile(k.config).DyConfig
-
+	spConfig := calc.ParseConfigFile(k.config).SpConfig
 	// ----------------------------------------------------------------
 	// 开始运行 xtb 程序做动力学模拟
 	// ----------------------------------------------------------------
@@ -328,8 +315,6 @@ func (k *KYBNMR) Run() error {
 		return fmt.Errorf("error running DFT optimization: %w", err)
 	}
 
-	// 读取 thermo/opt 下的所有 out 文件，并且将其转化为 ClusterList 对象
-
 	// ----------------------------------------------------------------
 	// 开始运行 gaussian/orca 程序做 DFT 单点能计算
 	// ----------------------------------------------------------------
@@ -337,9 +322,13 @@ func (k *KYBNMR) Run() error {
 	fmt.Println()
 	fmt.Println("Running Gaussian/Orca for DFT Single Point Energy Calculating...")
 	if k.sp == DFTGaussian {
-		err = calc.RunDFTSinglePoint(optConfig.GauPath, "GauTemplate.gjf", postRemainClusters, "gaussian")
+		// 调用 Multiwfn 将 out 文件全都转化为 inp 文件或 gjf 文件
+		err = calc.BatchMTFToGenerateFile("gaussian", "/thermo/opt", &spConfig)
+		err = calc.RunDFTSinglePoint(optConfig.GauPath, "gaussian")
 	} else if k.sp == DFTOrca {
-		err = calc.RunDFTSinglePoint(optConfig.OrcaPath, "OrcaTemplate.inp", postRemainClusters, "orca")
+		// 调用 Multiwfn 将 out 文件全都转化为 inp 文件或 gjf 文件
+		err = calc.BatchMTFToGenerateFile("orca", "/thermo/opt", &spConfig)
+		err = calc.RunDFTSinglePoint(optConfig.OrcaPath, "orca")
 	}
 	if err != nil {
 		return fmt.Errorf("error running DFT single point: %w", err)

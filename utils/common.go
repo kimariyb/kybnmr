@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"io/fs"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -13,9 +14,6 @@ import (
 /*
 * common.go
 * 该模块是 KYBNMR 程序所需要使用到的工具函数等
-*
-* @Method:
-*	ShowHead(): 展示程序头，包括作者信息、版本信息等
 *
 * @Author: Kimariyb
 * @Address: XiaMen University
@@ -99,7 +97,7 @@ func CheckFileType(filename, fileType string) bool {
 	return true
 }
 
-// moveFile 移动文件
+// MoveFile 移动文件
 // 将源文件移动到目标路径，并删除源文件
 // 参数：
 //   - sourcePath：源文件路径
@@ -107,7 +105,7 @@ func CheckFileType(filename, fileType string) bool {
 //
 // 返回值：
 //   - error：如果移动文件过程中发生错误，则返回相应的错误信息；否则返回 nil
-func moveFile(sourcePath, destPath string) error {
+func MoveFile(sourcePath, destPath string) error {
 	err := os.Rename(sourcePath, destPath)
 	if err != nil {
 		return err
@@ -148,7 +146,7 @@ func MoveFileForType(fileType string, targetFolder string) {
 			// 构建目标文件路径
 			destPath := filepath.Join(targetFolder, d.Name())
 			// 移动文件
-			err := moveFile(path, destPath)
+			err := MoveFile(path, destPath)
 			if err != nil {
 				fmt.Printf("Failed to move file: %s\n", err)
 			} else {
@@ -207,7 +205,7 @@ func MoveAllFileButKeepFile(keepFiles []string, targetFolder string) {
 		// 如果文件不需要保留，则移动到指定文件夹中
 		if !keep {
 			newPath := filepath.Join(targetFolder, d.Name())
-			err := moveFile(path, newPath)
+			err := MoveFile(path, newPath)
 			if err != nil {
 				fmt.Printf("Failed to move file: %s\n", err)
 			} else {
@@ -289,6 +287,61 @@ func ParseSkipSteps(skipSteps string) []int {
 func ContainsArray(array []int, value int) bool {
 	for _, v := range array {
 		if v == value {
+			return true
+		}
+	}
+	return false
+}
+
+// ReadCommandToSlice 根据 commandString 返回一个 []string 类型的值
+// 假如传一个 "22 0 12 2 2.5 3,6" 字符串，就返回成一个 []string{"22","0","12","2","2.5","3,6"}
+func ReadCommandToSlice(commandString string) []string {
+	slice := strings.Split(commandString, " ")
+	return slice
+}
+
+// PrependToSlice 在一个 []string{} 前追加元素
+func PrependToSlice(slice []string, elements ...string) []string {
+	return append(elements, slice...)
+}
+
+// ConcatenateFileName 拼接新文件名
+func ConcatenateFileName(sourceFile, targetFileType string) string {
+	filename := filepath.Base(sourceFile)
+	newFilename := filename[:len(filename)-len(filepath.Ext(filename))] + targetFileType
+	return newFilename
+}
+
+func ScanInputFiles(folderPath string, softwareName string) ([]string, error) {
+	var fileExtensions []string
+
+	if softwareName == "gaussian" {
+		fileExtensions = []string{".gjf"}
+	} else if softwareName == "orca" {
+		fileExtensions = []string{".inp"}
+	} else {
+		return nil, fmt.Errorf("unsupported software name：%s", softwareName)
+	}
+
+	var inputFiles []string
+
+	files, err := ioutil.ReadDir(folderPath)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read folder：%s，error：%v", folderPath, err)
+	}
+
+	for _, file := range files {
+		if !file.IsDir() && hasFileExtension(file.Name(), fileExtensions) {
+			inputFiles = append(inputFiles, filepath.Join(folderPath, file.Name()))
+		}
+	}
+
+	return inputFiles, nil
+}
+
+func hasFileExtension(fileName string, extensions []string) bool {
+	for _, ext := range extensions {
+		if strings.HasSuffix(fileName, ext) {
 			return true
 		}
 	}
