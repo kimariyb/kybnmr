@@ -347,3 +347,48 @@ func hasFileExtension(fileName string, extensions []string) bool {
 	}
 	return false
 }
+
+func moveFilesToDestination() {
+	// 获取当前目录
+	currentDir, err := os.Getwd()
+	if err != nil {
+		fmt.Printf("Failed to get current directory: %v\n", err)
+		return
+	}
+
+	// 创建目标文件夹 ./thermo/sp
+	spFolderPath := filepath.Join(currentDir, "thermo/sp")
+	err = os.MkdirAll(spFolderPath, 0755)
+	if err != nil {
+		fmt.Printf("Failed to create destination folder: %v\n", err)
+		return
+	}
+
+	// 获取当前目录下的所有文件
+	files, err := ioutil.ReadDir(currentDir)
+	if err != nil {
+		fmt.Printf("Failed to read directory: %v\n", err)
+		return
+	}
+
+	// 遍历文件列表，移动除了特定文件之外的所有 .inp 和 .gjf 文件
+	for _, file := range files {
+		// 检查文件扩展名是否为 .inp 或 .gjf
+		if !file.IsDir() && (strings.HasSuffix(file.Name(), ".inp") || strings.HasSuffix(file.Name(), ".gjf")) {
+			// 检查文件名是否为特定文件
+			if file.Name() != "OrcaTemplate.inp" && file.Name() != "GauTemplate.gjf" {
+				// 构建源文件路径和目标文件路径
+				sourcePath := filepath.Join(currentDir, file.Name())
+				destinationPath := filepath.Join(spFolderPath, file.Name())
+
+				// 移动文件
+				err := os.Rename(sourcePath, destinationPath)
+				if err != nil {
+					fmt.Printf("Failed to move file %s: %v\n", file.Name(), err)
+				} else {
+					fmt.Printf("File %s moved successfully.\n", file.Name())
+				}
+			}
+		}
+	}
+}

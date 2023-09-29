@@ -1,6 +1,7 @@
 package main
 
 import (
+	"kybnmr/calc"
 	"kybnmr/run"
 )
 
@@ -20,6 +21,13 @@ import (
  */
 
 func main() {
+	// 获取 config
+	spConfig := calc.ParseConfigFile("config.ini").SpConfig
+	//
+	err := calc.BatchMTFToGenerateFile("orca", &spConfig)
+	if err != nil {
+		return
+	}
 	// KYBNMR 主程序运行
 	KYBNMR := run.NewKYBNMR()
 	KYBNMR.ParseArgsToRun()

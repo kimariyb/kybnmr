@@ -316,11 +316,12 @@ func RunDFTSinglePoint(softwarePath string, softwareName string) error {
 }
 
 // BatchMTFToGenerateFile 批量通过 Multiwfn 产生文件
-// 首先扫描指定文件夹下的所有的 out 文件
+// 首先扫描 thermo/opt 文件夹下的所有的 out 文件
 // 接着批量调用 GenerateFileFromMTF() 生成 inp、gjf 文件
 // 将当前文件夹下的所有 inp 文件全部都转移到 ./thermo/sp 文件中
-func BatchMTFToGenerateFile(softwareName string, targetFolder string, spConfig *SingleConfig) error {
-	// 获取指定文件夹下的所有 out 文件
+func BatchMTFToGenerateFile(softwareName string, spConfig *SingleConfig) error {
+	// 扫描 thermo/opt 文件夹下的所有的 out 文件
+	targetFolder := "thermo/opt"
 	files, err := ioutil.ReadDir(targetFolder)
 	if err != nil {
 		return fmt.Errorf("unable to read target folder: %v", err)
@@ -330,23 +331,19 @@ func BatchMTFToGenerateFile(softwareName string, targetFolder string, spConfig *
 	spFolderPath := "thermo/sp"
 	err = os.MkdirAll(spFolderPath, 0755)
 	if err != nil {
-		fmt.Println("Error creating opt folder:", err)
+		fmt.Println("Error creating sp folder:", err)
 		return nil
 	}
 
-	// 批量生成文件并移动
+	// 批量生成文件
 	for _, file := range files {
 		if !file.IsDir() && filepath.Ext(file.Name()) == ".out" {
 			// 生成 inp 文件
-			inpFile := GenerateFileFromMTF(softwareName, filepath.Join(targetFolder, file.Name()), spConfig)
-
-			// 移动 inp 文件到指定文件夹
-			err := utils.MoveFile(inpFile, "/thermo/sp")
-			if err != nil {
-				fmt.Printf("Unable to move files %s to the destination folder: %v\n", inpFile, err)
-			}
+			GenerateFileFromMTF(softwareName, filepath.Join(targetFolder, file.Name()), spConfig)
 		}
 	}
+
+	// 将当前目录下所有生成的 inp/gjf 文件都放进 ./thermo/sp 中，除了 OrcaTemplate.inp 和 GauTemplate.gjf
 
 	return nil
 }

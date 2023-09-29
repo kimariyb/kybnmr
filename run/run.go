@@ -323,11 +323,11 @@ func (k *KYBNMR) Run() error {
 	fmt.Println("Running Gaussian/Orca for DFT Single Point Energy Calculating...")
 	if k.sp == DFTGaussian {
 		// 调用 Multiwfn 将 out 文件全都转化为 inp 文件或 gjf 文件
-		err = calc.BatchMTFToGenerateFile("gaussian", "/thermo/opt", &spConfig)
+		err = calc.BatchMTFToGenerateFile("gaussian", &spConfig)
 		err = calc.RunDFTSinglePoint(optConfig.GauPath, "gaussian")
 	} else if k.sp == DFTOrca {
 		// 调用 Multiwfn 将 out 文件全都转化为 inp 文件或 gjf 文件
-		err = calc.BatchMTFToGenerateFile("orca", "/thermo/opt", &spConfig)
+		err = calc.BatchMTFToGenerateFile("orca", &spConfig)
 		err = calc.RunDFTSinglePoint(optConfig.OrcaPath, "orca")
 	}
 	if err != nil {
