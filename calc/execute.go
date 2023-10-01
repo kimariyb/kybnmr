@@ -344,6 +344,7 @@ func BatchMTFToGenerateFile(softwareName string, spConfig *SingleConfig) error {
 	}
 
 	// 将当前目录下所有生成的 inp/gjf 文件都放进 ./thermo/sp 中，除了 OrcaTemplate.inp 和 GauTemplate.gjf
+	utils.MoveFilesToDestination()
 
 	return nil
 }

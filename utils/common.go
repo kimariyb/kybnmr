@@ -348,7 +348,7 @@ func hasFileExtension(fileName string, extensions []string) bool {
 	return false
 }
 
-func moveFilesToDestination() {
+func MoveFilesToDestination() {
 	// 获取当前目录
 	currentDir, err := os.Getwd()
 	if err != nil {
