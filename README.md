@@ -57,7 +57,7 @@ Double Check helps us to find the structures that satisfy the above two cases, a
 - Tian Lu, Qinxue Chen, Shermo: A general code for calculating molecular thermodynamic properties, *Comput. Theor. Chem.*, 1200, 113249 (**2021**) DOI: 10.1016/j.comptc.2021.113249
 - Tian Lu, Feiwu Chen, Multiwfn: A Multifunctional Wavefunction Analyzer, *J. Comput. Chem.* 33, 580-592 (**2012**) DOI: 10.1002/jcc.22885
 - Tian Lu, Molclus program, Version 1.12, http://www.keinsci.com/research/molclus.html (accessed Aug-23, **2023**)
-- C. Bannwarth, E. Caldeweyher, S. Ehlert, A. Hansen, P. Pracht, J. Seibert, S. Spicher, S. Grimme WIREs Comput. Mol. Sci., 2020, 11, e01493. DOI: 10.1002/wcms.1493 
+- C. Bannwarth, E. Caldeweyher, S. Ehlert, A. Hansen, P. Pracht, J. Seibert, S. Spicher, S. Grimme _WIREs Comput. Mol. Sci._, **2020**, 11, e01493. DOI: 10.1002/wcms.1493 
 - S. Grimme, C. Bannwarth, P. Shushkov, _J. Chem. Theory Comput._, **2017**, 13, 1989-2009. DOI: 10.1021/acs.jctc.7b00118 
 - C. Bannwarth, S. Ehlert and S. Grimme., _J. Chem. Theory Comput._, **2019**, 15, 1652-1671. DOI: 10.1021/acs.jctc.8b01176 
 - P. Pracht, E. Caldeweyher, S. Ehlert, S. Grimme, _ChemRxiv_, **2019**, preprint. DOI: 10.26434/chemrxiv.8326202.v1
