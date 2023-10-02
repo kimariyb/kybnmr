@@ -257,7 +257,6 @@ func (k *KYBNMR) Run() error {
 	// 获取配置信息
 	optConfig := calc.ParseConfigFile(k.config).OptConfig
 	dyConfig := calc.ParseConfigFile(k.config).DyConfig
-	spConfig := calc.ParseConfigFile(k.config).SpConfig
 	// ----------------------------------------------------------------
 	// 开始运行 xtb 程序做动力学模拟
 	// ----------------------------------------------------------------
@@ -318,17 +317,26 @@ func (k *KYBNMR) Run() error {
 	// ----------------------------------------------------------------
 	// 开始运行 gaussian/orca 程序做 DFT 单点能计算
 	// ----------------------------------------------------------------
-	// 执行 DFT 步骤
 	fmt.Println()
 	fmt.Println("Running Gaussian/Orca for DFT Single Point Energy Calculating...")
 	if k.sp == DFTGaussian {
-		// 调用 Multiwfn 将 out 文件全都转化为 inp 文件或 gjf 文件
-		err = calc.BatchMTFToGenerateFile("gaussian", &spConfig)
-		err = calc.RunDFTSinglePoint(optConfig.GauPath, "gaussian")
+		// 获取 thermo/opt 文件夹下所有 out 文件，并且调用 ParseOutFile 将所有的 cluster 组合成 ClusterList
+		spClusters, err := calc.ReadClusterListFromOut("gaussian")
+		if err != nil {
+			return err
+		}
+		// 执行 DFT 步骤
+		err = calc.RunDFTSinglePoint(optConfig.GauPath, "GauTemplate.gjf", spClusters, "gaussian")
+
 	} else if k.sp == DFTOrca {
-		// 调用 Multiwfn 将 out 文件全都转化为 inp 文件或 gjf 文件
-		err = calc.BatchMTFToGenerateFile("orca", &spConfig)
-		err = calc.RunDFTSinglePoint(optConfig.OrcaPath, "orca")
+		// 获取 thermo/opt 文件夹下所有 out 文件，并且调用 ParseOutFile 将所有的 cluster 组合成 ClusterList
+		spClusters, err := calc.ReadClusterListFromOut("orca")
+		if err != nil {
+			return err
+		}
+		// 执行 DFT 步骤
+		err = calc.RunDFTSinglePoint(optConfig.GauPath, "OrcaTemplate.inp", spClusters, "orca")
+
 	}
 	if err != nil {
 		return fmt.Errorf("error running DFT single point: %w", err)

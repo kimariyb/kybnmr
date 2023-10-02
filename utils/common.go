@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"io/fs"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -30,7 +29,7 @@ func ShowHead() (string, string) {
 	asciiArt := `
       -----------------------------------------------------------
      |                   =====================                   |
-     |                          KYBNMR                          |
+     |                          KYBNMR                           |
      |                   =====================                   |
      |                        Kimari Y.B.                        |
      |        School of Electronic Science and Engineering       |
@@ -43,6 +42,20 @@ func ShowHead() (string, string) {
 	fmt.Println(asciiArt)
 
 	return version, date
+}
+
+// FormatDuration 将时间转化为特定的的格式，同时输出当前时间
+func FormatDuration(duration time.Duration) {
+	fmt.Println()
+	fmt.Println("----------------------------------------------------------------")
+	fmt.Println("Thanks for your use !!!")
+	durationString := fmt.Sprintf("%02dh : %02dm : %02ds", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60) // 输出 KYBNMR 程序运行的总时间
+	fmt.Printf("Time spent running KYBNMR: %s\n", durationString)
+	// 展示结束语，同时输出当前时间日期，以及版权 (c)
+	currentTime := time.Now().Format("2006-01-02 15:04:05")
+	fmt.Printf("KYBNMR finished at %s. Copyright (c) Kimariyb\n", currentTime)
+	fmt.Println("----------------------------------------------------------------")
+	fmt.Println()
 }
 
 // CheckFileCurrentExist 检查当前运行脚本的目录下是否存在指定文件
@@ -115,7 +128,8 @@ func MoveFile(sourcePath, destPath string) error {
 
 // MoveFileForType 移动当前文件夹下的所有某一类型的文件至指定文件夹
 // 不移动目录下的任何文件夹，以及文件夹中的文件
-func MoveFileForType(fileType string, targetFolder string) {
+// 可以选择不移动指定的某一文件或多个文件
+func MoveFileForType(fileType string, targetFolder string, excludeFiles ...string) {
 	// 获取当前目录
 	currentDir, err := os.Getwd()
 	if err != nil {
@@ -141,8 +155,8 @@ func MoveFileForType(fileType string, targetFolder string) {
 
 		// 获取文件的扩展名
 		fileExt := strings.ToLower(filepath.Ext(path))
-		// 如果文件的扩展名与目标类型匹配，则移动文件
-		if fileExt == strings.ToLower(fileType) {
+		// 如果文件的扩展名与目标类型匹配，并且文件名不在排除列表中，则移动文件
+		if fileExt == strings.ToLower(fileType) && !contains(excludeFiles, d.Name()) {
 			// 构建目标文件路径
 			destPath := filepath.Join(targetFolder, d.Name())
 			// 移动文件
@@ -160,6 +174,16 @@ func MoveFileForType(fileType string, targetFolder string) {
 	if err != nil {
 		fmt.Printf("Error walking directory: %s\n", err)
 	}
+}
+
+// 辅助函数：检查字符串切片中是否包含指定的字符串
+func contains(slice []string, str string) bool {
+	for _, s := range slice {
+		if s == str {
+			return true
+		}
+	}
+	return false
 }
 
 // MoveAllFileButKeepFile
@@ -248,147 +272,4 @@ func SplitStringByComma(str string) []float64 {
 		values[i] = val
 	}
 	return values
-}
-
-// FormatDuration 将时间转化为特定的的格式，同时输出当前时间
-func FormatDuration(duration time.Duration) {
-	fmt.Println()
-	fmt.Println("----------------------------------------------------------------")
-	fmt.Println("Thanks for your use !!!")
-	durationString := fmt.Sprintf("%02dh : %02dm : %02ds", int(duration.Hours()), int(duration.Minutes())%60, int(duration.Seconds())%60) // 输出 KYBNMR 程序运行的总时间
-	fmt.Printf("Time spent running KYBNMR: %s\n", durationString)
-	// 展示结束语，同时输出当前时间日期，以及版权 (c)
-	currentTime := time.Now().Format("2006-01-02 15:04:05")
-	fmt.Printf("KYBNMR finished at %s. Copyright (c) Kimariyb\n", currentTime)
-	fmt.Println("----------------------------------------------------------------")
-	fmt.Println()
-}
-
-// ParseSkipSteps 解析 skipSteps 字符串为整数数组
-func ParseSkipSteps(skipSteps string) []int {
-	var steps []int
-
-	if skipSteps != "" {
-		stepStrs := strings.Split(skipSteps, " ")
-		for _, stepStr := range stepStrs {
-			step, err := strconv.Atoi(stepStr)
-			if err != nil {
-				fmt.Println("Invalid skip step:", stepStr)
-			} else {
-				steps = append(steps, step)
-			}
-		}
-	}
-
-	return steps
-}
-
-// ContainsArray 判断整数数组中是否包含指定的值
-func ContainsArray(array []int, value int) bool {
-	for _, v := range array {
-		if v == value {
-			return true
-		}
-	}
-	return false
-}
-
-// ReadCommandToSlice 根据 commandString 返回一个 []string 类型的值
-// 假如传一个 "22 0 12 2 2.5 3,6" 字符串，就返回成一个 []string{"22","0","12","2","2.5","3,6"}
-func ReadCommandToSlice(commandString string) []string {
-	slice := strings.Split(commandString, " ")
-	return slice
-}
-
-// PrependToSlice 在一个 []string{} 前追加元素
-func PrependToSlice(slice []string, elements ...string) []string {
-	return append(elements, slice...)
-}
-
-// ConcatenateFileName 拼接新文件名
-func ConcatenateFileName(sourceFile, targetFileType string) string {
-	filename := filepath.Base(sourceFile)
-	newFilename := filename[:len(filename)-len(filepath.Ext(filename))] + targetFileType
-	return newFilename
-}
-
-func ScanInputFiles(folderPath string, softwareName string) ([]string, error) {
-	var fileExtensions []string
-
-	if softwareName == "gaussian" {
-		fileExtensions = []string{".gjf"}
-	} else if softwareName == "orca" {
-		fileExtensions = []string{".inp"}
-	} else {
-		return nil, fmt.Errorf("unsupported software name：%s", softwareName)
-	}
-
-	var inputFiles []string
-
-	files, err := ioutil.ReadDir(folderPath)
-	if err != nil {
-		return nil, fmt.Errorf("unable to read folder：%s，error：%v", folderPath, err)
-	}
-
-	for _, file := range files {
-		if !file.IsDir() && hasFileExtension(file.Name(), fileExtensions) {
-			inputFiles = append(inputFiles, filepath.Join(folderPath, file.Name()))
-		}
-	}
-
-	return inputFiles, nil
-}
-
-func hasFileExtension(fileName string, extensions []string) bool {
-	for _, ext := range extensions {
-		if strings.HasSuffix(fileName, ext) {
-			return true
-		}
-	}
-	return false
-}
-
-func MoveFilesToDestination() {
-	// 获取当前目录
-	currentDir, err := os.Getwd()
-	if err != nil {
-		fmt.Printf("Failed to get current directory: %v\n", err)
-		return
-	}
-
-	// 创建目标文件夹 ./thermo/sp
-	spFolderPath := filepath.Join(currentDir, "thermo/sp")
-	err = os.MkdirAll(spFolderPath, 0755)
-	if err != nil {
-		fmt.Printf("Failed to create destination folder: %v\n", err)
-		return
-	}
-
-	// 获取当前目录下的所有文件
-	files, err := ioutil.ReadDir(currentDir)
-	if err != nil {
-		fmt.Printf("Failed to read directory: %v\n", err)
-		return
-	}
-
-	// 遍历文件列表，移动除了特定文件之外的所有 .inp 和 .gjf 文件
-	for _, file := range files {
-		// 检查文件扩展名是否为 .inp 或 .gjf
-		if !file.IsDir() && (strings.HasSuffix(file.Name(), ".inp") || strings.HasSuffix(file.Name(), ".gjf")) {
-			// 检查文件名是否为特定文件
-			if file.Name() != "OrcaTemplate.inp" && file.Name() != "GauTemplate.gjf" {
-				// 构建源文件路径和目标文件路径
-				sourcePath := filepath.Join(currentDir, file.Name())
-				destinationPath := filepath.Join(spFolderPath, file.Name())
-
-				// 移动文件
-				err := os.Rename(sourcePath, destinationPath)
-				if err != nil {
-					fmt.Printf("Failed to move file %s: %v\n", file.Name(), err)
-				} else {
-					fmt.Printf("File %s moved successfully.\n", file.Name())
-				}
-			}
-		}
-	}
 }
