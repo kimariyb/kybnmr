@@ -16,31 +16,32 @@ import (
 * config.go
 * 该模块主要涉及实现 KYBNMR 运行时所需要读取配置、写入文件功能
 *
+*	Config 结构体，用来存储 ini 文件内的配置。在 KYBNMR 的 ini 文件中，你可以配置以下属性
+* 	[dynamics] 使用 xtb 做动力学的配置项
+*		temperature(float): 温度，单位为 K
+*		time(float): 时间，单位为 ps
+*		dump(float): 每间隔多少时间往轨迹文件里写入一次，单位为 fs
+*		step(float): 步长，单位为 fs
+*		velo(bool): 是否输出速度
+*		nvt(bool): 是否开启 NVT 模拟
+*		hmass(int): 氢原子的质量是实际的多少倍
+*		shake(int): 将与氢有关的化学键距离都用 SHAKE 算法约束住
+*		sccacc(float): 动态 xTB 计算的准确性
+*		dynamicArgs(string): 运行 xtb 做动力学的命令
+*
+*	[optimized] 使用 xtb 做预优化的配置项、使用 Gaussian 和 orca 做进一步优化的配置项
+*		preOptArgs(string)：预优化的参数
+*		postOptArgs(string): 进一步优化的参数
+*		preThreshold(string): 预优化之后的阈值
+*		postThreshold(string): 进一步优化之后的阈值
+*		gauPath(string): gaussian 运行路径
+*		orcaPath(string): orca 运行路径
+*		shermoPath(string): shermo 运行路径
+*
 * @Author: Kimariyb
 * @Address: XiaMen University
 * @Data: 2023-09-21
  */
-
-// Config 结构体，用来存储 ini 文件内的配置。在 KYBNMR 的 ini 文件中，你可以配置以下属性
-// [dynamics] 使用 xtb 做动力学的配置项
-//		temperature(float): 温度，单位为 K
-//		time(float): 时间，单位为 ps
-//		dump(float): 每间隔多少时间往轨迹文件里写入一次，单位为 fs
-//		step(float): 步长，单位为 fs
-//		velo(bool): 是否输出速度
-//		nvt(bool): 是否开启 NVT 模拟
-//		hmass(int): 氢原子的质量是实际的多少倍
-//		shake(int): 将与氢有关的化学键距离都用 SHAKE 算法约束住
-//		sccacc(float): 动态 xTB 计算的准确性
-//		dynamicArgs(string): 运行 xtb 做动力学的命令
-//
-// [optimized] 使用 xtb 做预优化的配置项、使用 Gaussian 和 orca 做进一步优化的配置项
-//		preOptArgs(string)：
-//		postOptArgs(string):
-//		preThreshold(string):
-//		postThreshold(string):
-//		gauPath(string):
-//		orcaPath(string):
 
 // DynamicsConfig ini 文件中动力学部分的配置文件
 type DynamicsConfig struct {
@@ -559,10 +560,6 @@ func ParseXyzFile(xyzFile string) (ClusterList, error) {
 // 如果 xyzFileName 是已经存在的文件，则往文件末尾追加信息
 // @param clusters: []Cluster 需要写入的文件信息
 // @param xyzFileName: string 需要写入的 xyz 文件的名称
-// WriteToXyzFile 向一个标准 XYZ 文件中写入信息，同时格式化 XYZ 文件
-// 如果 xyzFileName 是已经存在的文件，则往文件末尾追加信息
-// @param clusters: []Cluster 需要写入的文件信息
-// @param xyzFileName: string 需要写入的 XYZ 文件的名称
 func WriteToXyzFile(clusters ClusterList, xyzFileName string) {
 	file, err := os.OpenFile(xyzFileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {

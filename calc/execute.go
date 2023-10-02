@@ -275,8 +275,15 @@ func RunDFTOptimization(softwarePath string, templateFile string, clusters Clust
 //   - softwareName string: 使用的程序
 func ReadClusterListFromOut(softwareName string) (ClusterList, error) {
 	var clusterList ClusterList
-	targetFolder := "thermo/opt"
 
+	// 获取主程序运行文件夹的绝对路径
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return clusterList, err
+	}
+
+	// 构建 thermo/opt 文件夹的完整路径
+	targetFolder := filepath.Join(currentDir, "thermo/opt")
 	// 首先扫描指定文件夹下的所有 out 文件
 	files, err := ioutil.ReadDir(targetFolder)
 	if err != nil {
@@ -287,10 +294,7 @@ func ReadClusterListFromOut(softwareName string) (ClusterList, error) {
 		// 检查文件是否为 out 文件
 		if strings.HasSuffix(file.Name(), ".out") {
 			// 获取 out 文件的完整路径
-			outFilePath, err := filepath.Abs(file.Name())
-			if err != nil {
-				return clusterList, err
-			}
+			outFilePath := filepath.Join(targetFolder, file.Name())
 			// 解析 out 文件并将聚类添加到聚类列表中
 			cluster, err := ParseOutFile(softwareName, outFilePath)
 			if err != nil {
