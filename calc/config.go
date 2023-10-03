@@ -219,22 +219,17 @@ func parseGauOutput(filePath string) (Cluster, error) {
 
 	for scanner.Scan() {
 		line := scanner.Text()
-
 		// 接着找到文件中最后一个 Standard orientation
 		// 定位到最后一个 Standard orientation 一行后，接着跳过四行。因为后面四行为表格线
 		if strings.Contains(line, "Standard orientation") {
 			// 在找到新的 "Standard orientation" 时，将上一次找到的最后一个 "Standard orientation" 对应的 atoms 清空
-			lastOrientationAtoms = atoms[:0]
 			atoms = atoms[:0]
+			lastOrientationAtoms = make([]Atom, 0) // 初始化为新的空切片
 			foundLastOrientation = false
 			// 跳过四行表格线
 			for i := 0; i < 4; i++ {
 				scanner.Scan()
 			}
-		}
-
-		if foundLastOrientation && len(atoms) > 0 {
-			lastOrientationAtoms = append(lastOrientationAtoms, atoms...)
 		}
 
 		if strings.Contains(line, "Standard orientation") {
@@ -274,6 +269,10 @@ func parseGauOutput(filePath string) (Cluster, error) {
 					Y:      y,
 					Z:      z,
 				})
+
+				if foundLastOrientation && len(atoms) > 0 {
+					lastOrientationAtoms = append(lastOrientationAtoms, atoms...)
+				}
 			}
 		}
 	}

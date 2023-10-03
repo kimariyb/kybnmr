@@ -320,7 +320,7 @@ func RunDFTSinglePoint(softwarePath string, templateFile string, clusters Cluste
 		return nil
 	}
 
-	// 创建 thermo/opt 文件夹（如果不存在）
+	// 创建 thermo/sp 文件夹（如果不存在）
 	optFolderPath := "thermo/sp"
 	err = os.MkdirAll(optFolderPath, 0755)
 	if err != nil {

@@ -304,11 +304,17 @@ func (k *KYBNMR) Run() error {
 	// ----------------------------------------------------------------
 	// 执行 DFT 步骤
 	fmt.Println()
+	spClusters := calc.ClusterList{}
+
 	fmt.Println("Running Gaussian/Orca for DFT Optimization Calculating...")
 	if k.opt == DFTGaussian {
 		err = calc.RunDFTOptimization(optConfig.GauPath, "GauTemplate.gjf", postRemainClusters, "gaussian")
+		// 获取 thermo/opt 文件夹下所有 out 文件，并且调用 ParseOutFile 将所有的 cluster 组合成 ClusterList
+		spClusters, err = calc.ReadClusterListFromOut("gaussian")
 	} else if k.opt == DFTOrca {
 		err = calc.RunDFTOptimization(optConfig.OrcaPath, "OrcaTemplate.inp", postRemainClusters, "orca")
+		// 获取 thermo/opt 文件夹下所有 out 文件，并且调用 ParseOutFile 将所有的 cluster 组合成 ClusterList
+		spClusters, err = calc.ReadClusterListFromOut("orca")
 	}
 	if err != nil {
 		return fmt.Errorf("error running DFT optimization: %w", err)
@@ -320,27 +326,19 @@ func (k *KYBNMR) Run() error {
 	fmt.Println()
 	fmt.Println("Running Gaussian/Orca for DFT Single Point Energy Calculating...")
 	if k.sp == DFTGaussian {
-		// 获取 thermo/opt 文件夹下所有 out 文件，并且调用 ParseOutFile 将所有的 cluster 组合成 ClusterList
-		spClusters, err := calc.ReadClusterListFromOut("gaussian")
-		if err != nil {
-			return err
-		}
 		// 执行 DFT 步骤
 		err = calc.RunDFTSinglePoint(optConfig.GauPath, "GauTemplate.gjf", spClusters, "gaussian")
-
 	} else if k.sp == DFTOrca {
-		// 获取 thermo/opt 文件夹下所有 out 文件，并且调用 ParseOutFile 将所有的 cluster 组合成 ClusterList
-		spClusters, err := calc.ReadClusterListFromOut("orca")
-		if err != nil {
-			return err
-		}
 		// 执行 DFT 步骤
-		err = calc.RunDFTSinglePoint(optConfig.GauPath, "OrcaTemplate.inp", spClusters, "orca")
-
+		err = calc.RunDFTSinglePoint(optConfig.OrcaPath, "OrcaTemplate.inp", spClusters, "orca")
 	}
 	if err != nil {
 		return fmt.Errorf("error running DFT single point: %w", err)
 	}
+
+	// ----------------------------------------------------------------
+	// 最后调用 Shermo 计算 Bolzmann 分布
+	// ----------------------------------------------------------------
 
 	// 输出时间差以及当前时间
 	utils.FormatDuration(time.Since(start))
