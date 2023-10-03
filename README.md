@@ -66,6 +66,7 @@ Double Check helps us to find the structures that satisfy the above two cases, a
 
 - The developer of Multiwfn, Shermo and Molclus, **Tian Lu**.
 - The developer of XTB and Crest, **S. Grimme**.
+- The developer of EasyShermo, **Kimari YB, Hsiun Ryan**.
 
 ## License
 

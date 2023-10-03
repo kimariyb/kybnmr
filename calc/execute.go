@@ -2,11 +2,13 @@ package calc
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"kybnmr/utils"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 )
@@ -378,4 +380,246 @@ func RunDFTSinglePoint(softwarePath string, templateFile string, clusters Cluste
 	utils.MoveFileForType(".out", "thermo/sp")
 
 	return nil
+}
+
+// RunShermoToBolzmann 调用 Shermo 计算 Bolzmann 分布
+// 首先定位到当前程序运行的 thermo/opt 文件夹下，在 thermo/opt 新建一个 txt 文件，文件模板内容如下：
+// [FileName] [Energy]
+// ................
+// FileName 和 Energy 都是 resultCollection 中每一个 result 结构体的属性
+// 接着调用 shermo 执行这个 txt 文件，同时在屏幕上显示输出的内容
+// 参数：
+//   - resultCollection: []ShermoResult: ShermoResult 组成的 slice
+//   - ShermoResult: FileName string: 文件的路径
+//   - ShermoResult: Energy   string: 能量
+//   - shermoPath: string shermo 程序的运行路径
+func RunShermoToBolzmann(resultCollection []ShermoResult, shermoPath string) error {
+	// 获取主程序运行文件夹的绝对路径
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+
+	// 创建 txt 文件并写入内容
+	txtFilePath := filepath.Join(currentDir, "thermo/opt/shermo.txt")
+	if err := createInputFile(txtFilePath, resultCollection); err != nil {
+		return err
+	}
+
+	// 创建输出文件
+	outputFile := filepath.Join(currentDir, "thermo/opt/output.txt")
+
+	// 通过命令行运行 Shermo
+	cmd := exec.Command(shermoPath, txtFilePath)
+	result, err := cmd.CombinedOutput()
+	if err == nil {
+		fmt.Println()
+		fmt.Printf("Hint: Shermo completed successfully on file %s.\n\n", txtFilePath)
+		contents := string(result)
+		// 写入输出数据到文件
+		outputFile := filepath.Join(outputFile + ".txt")
+		err = ioutil.WriteFile(outputFile, []byte(contents), 0644)
+		if err != nil {
+			fmt.Printf("Error writing output file: %v\n", err)
+		}
+	} else {
+		fmt.Println()
+		fmt.Printf("Hint: Shermo execution failed on file %s.\n", txtFilePath)
+	}
+
+	return nil
+}
+
+func createInputFile(filePath string, resultCollection []ShermoResult) error {
+	var lines []string
+	for _, result := range resultCollection {
+		line := fmt.Sprintf("%s %s", result.FileName, result.Energy)
+		lines = append(lines, line)
+	}
+
+	content := strings.Join(lines, "\n")
+	err := ioutil.WriteFile(filePath, []byte(content), 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func FindLastMatch(contents string, regex *regexp.Regexp, groupIndex int) (string, error) {
+	// 使用正则表达式在字符串中查找所有匹配项
+	matches := regex.FindAllStringSubmatch(contents, -1)
+	// 获取第二个匹配项
+	if len(matches) >= 2 {
+		secondMatch := matches[1]
+		if len(secondMatch) > groupIndex {
+			return secondMatch[groupIndex], nil
+		}
+	}
+	return "", fmt.Errorf("no energy found")
+}
+
+func GetGaussianEnergy() []ShermoResult {
+	// 创建一个切片用来存放每一个文件对应的 results
+	var resultsCollection []ShermoResult
+
+	// 获取主程序运行文件夹的绝对路径
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return resultsCollection
+	}
+
+	// 构建 thermo/sp 文件夹的完整路径
+	targetFolder := filepath.Join(currentDir, "thermo/sp")
+
+	// 读取目标文件夹下的所有文件
+	files, err := os.ReadDir(targetFolder)
+	if err != nil {
+		fmt.Println("Error: failed to read directory", err)
+		return resultsCollection
+	}
+
+	// 遍历文件列表并处理每个文件
+	for _, file := range files {
+		// 获取文件的完整路径
+		filePath := filepath.Join(targetFolder, file.Name())
+
+		// 通过 filePath 打开文件
+		file, err := os.Open(filePath)
+		if err != nil {
+			fmt.Println("Error: Unable to open the file", err)
+			continue
+		}
+		defer file.Close()
+
+		// 读取文件内容为 Bytes
+		contentsBytes, err := io.ReadAll(file)
+		// Bytes 转化为字符串
+		contentsString := string(contentsBytes)
+		if err != nil {
+			fmt.Println("Error: Failed to read", err)
+			continue
+		}
+
+		// 替换空格
+		re := regexp.MustCompile(`\s+`)
+		contentsString = re.ReplaceAllString(contentsString, "")
+
+		if err != nil {
+			fmt.Println("Error: Failed to read", err)
+			continue
+		}
+
+		// 使用正则表达式搜索 gaussian 单点能
+		ccsdTRegex := regexp.MustCompile(`CCSD\(T\)=\s*(-?\d+\.\d+)`)
+		mp2Regex := regexp.MustCompile(`MP2=\s*(-?\d+\.\d+)`)
+		hfRegex := regexp.MustCompile(`HF=\s*(-?\d+\.\d+)`)
+
+		// 首先匹配是否存在 CCSD(T) 的能量，如果存在则直接读取，并将结果保存在 results 中
+		ccsdTEnergy, err := FindLastMatch(contentsString, ccsdTRegex, 1)
+		if err == nil {
+			fileResults := ShermoResult{
+				FileName: filePath,
+				Energy:   ccsdTEnergy,
+			}
+			fmt.Println("The Single Point Energy [CCSD(T)] of " + file.Name() + " is : " + ccsdTEnergy)
+
+			resultsCollection = append(resultsCollection, fileResults)
+			continue
+		}
+		// 如果不存在 CCSD(T) 的能量，但是存在 MP2 能量，则将 MP2 结果保存在 results 中
+		mp2Energy, err := FindLastMatch(contentsString, mp2Regex, 1)
+		if err == nil {
+			fileResults := ShermoResult{
+				FileName: filePath,
+				Energy:   mp2Energy,
+			}
+			fmt.Println("The Single Point Energy [MP2] of " + file.Name() + " is : " + mp2Energy)
+
+			resultsCollection = append(resultsCollection, fileResults)
+			continue
+		}
+		// 如果不存在 CCSD(T) 和 MP2 的能量，但是存在 HF 能量，则将 HF 结果保存在 results 中
+		hfEnergy, err := FindLastMatch(contentsString, hfRegex, 1)
+		if err == nil {
+			fileResults := ShermoResult{
+				FileName: filePath,
+				Energy:   hfEnergy,
+			}
+			fmt.Println("The Single Point Energy [HF] of " + file.Name() + " is : " + mp2Energy)
+			resultsCollection = append(resultsCollection, fileResults)
+			continue
+		}
+
+		fmt.Println("No energy found", filePath)
+	}
+
+	return resultsCollection
+}
+
+func GetOrcaEnergy() []ShermoResult {
+	// 创建一个切片用来存放每一个文件对应的 results
+	var resultsCollection []ShermoResult
+
+	// 获取主程序运行文件夹的绝对路径
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return resultsCollection
+	}
+
+	// 构建 thermo/sp 文件夹的完整路径
+	targetFolder := filepath.Join(currentDir, "thermo/sp")
+
+	// 读取目标文件夹下的所有文件
+	files, err := os.ReadDir(targetFolder)
+	if err != nil {
+		fmt.Println("Error: failed to read directory", err)
+		return resultsCollection
+	}
+
+	// 遍历文件列表并处理每个文件
+	for _, file := range files {
+		// 获取文件的完整路径
+		filePath := filepath.Join(targetFolder, file.Name())
+
+		// 通过 filePath 打开文件
+		file, err := os.Open(filePath)
+		if err != nil {
+			fmt.Println("Error: Unable to open the file", err)
+			continue
+		}
+		defer file.Close()
+
+		// 读取文件内容为 Bytes
+		contentsBytes, err := io.ReadAll(file)
+		// Bytes 转化为字符串
+		contentsString := string(contentsBytes)
+		if err != nil {
+			fmt.Println("Error: Failed to read", err)
+			continue
+		}
+
+		// 使用正则表达式搜索 orca 单点能
+		energyRegex := regexp.MustCompile(`FINAL SINGLE POINT ENERGY\s+(-?\d+\.\d+)`)
+
+		// 查找匹配的能量值
+		matches := energyRegex.FindAllStringSubmatch(contentsString, -1)
+		if len(matches) > 0 {
+			// 查找文件中最后一个匹配项的能量值
+			energy := matches[len(matches)-1][1]
+			fmt.Println("Energy:", energy)
+
+			// 创建 results 结构体对象
+			fileResults := ShermoResult{
+				FileName: filePath,
+				Energy:   energy,
+			}
+
+			resultsCollection = append(resultsCollection, fileResults)
+		} else {
+			fmt.Println("No energy found", filePath)
+		}
+	}
+
+	return resultsCollection
 }

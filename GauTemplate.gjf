@@ -1,4 +1,4 @@
-# opt freq b3lyp/6-31g* int=fine scrf(solvent=CHCl3)
+# opt freq b3lyp/6-31g* int=fine
 
 Template file
 

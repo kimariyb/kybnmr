@@ -326,10 +326,10 @@ func (k *KYBNMR) Run() error {
 	fmt.Println()
 	fmt.Println("Running Gaussian/Orca for DFT Single Point Energy Calculating...")
 	if k.sp == DFTGaussian {
-		// 执行 DFT 步骤
+		// 执行 DFT 步骤，调用 Gaussian 计算能量
 		err = calc.RunDFTSinglePoint(optConfig.GauPath, "GauTemplate.gjf", spClusters, "gaussian")
 	} else if k.sp == DFTOrca {
-		// 执行 DFT 步骤
+		// 执行 DFT 步骤，调用 Orca 计算能量
 		err = calc.RunDFTSinglePoint(optConfig.OrcaPath, "OrcaTemplate.inp", spClusters, "orca")
 	}
 	if err != nil {
@@ -339,6 +339,22 @@ func (k *KYBNMR) Run() error {
 	// ----------------------------------------------------------------
 	// 最后调用 Shermo 计算 Bolzmann 分布
 	// ----------------------------------------------------------------
+	fmt.Println()
+	fmt.Println("Running Shermo for Calculating Bolzmann distribution...")
+	var resultCollection []calc.ShermoResult
+
+	if k.sp == DFTGaussian {
+		// 调用 Gaussian 的输出文件
+		resultCollection = calc.GetGaussianEnergy()
+	} else if k.sp == DFTOrca {
+		// 调用 Orca 的输出文件
+		resultCollection = calc.GetOrcaEnergy()
+	}
+	// 运行 shermo 对 bolzmann 分布计算
+	err = calc.RunShermoToBolzmann(resultCollection, optConfig.ShermoPath)
+	if err != nil {
+		return err
+	}
 
 	// 输出时间差以及当前时间
 	utils.FormatDuration(time.Since(start))

@@ -74,6 +74,11 @@ type Config struct {
 	OptConfig OptimizedConfig
 }
 
+type ShermoResult struct {
+	FileName string
+	Energy   string
+}
+
 // ParseConfigFile 解析符合条件的 ini 文件，并且返回一个 Config 对象
 func ParseConfigFile(configFile string) *Config {
 	// 声明一个 Config 结构体
