@@ -42,15 +42,97 @@ Double Check helps us to find the structures that satisfy the above two cases, a
 
 ## How to install KYBNMR
 
-> Install KYBNMR
+**First**, go to the release page and download the compiled KYBNMR and extract it to your linux system.
+
+```shell
+unzip kybnmr.zip
+```
+
+**Next**, install the necessary programs to run KYBNMR, such as xtb, Gaussian, Orca, and Shermo.
+
+- XTB version: `6.6.0`
+- Gaussian version: `C.01` or `A.03`
+- Orca version: `5.0.4`
+- Shermo version: `2.4.0`
 
 ## How to use KYBNMR
 
-> Use KYBNMR
+Before using KYBNMR, you first need to configure the `config.ini` file.
 
-## Why we need KYBNMR
+```ini
+[dynamics]
+temperature = 400
+time = 100.0
+dump = 50.0
+step = 1.0
+hmass = 1
+shake = 1
+velo = true
+nvt = false
+sccacc = 2.0
+dynamicsArgs = "--omd --gfn 0"
 
-> Need KYBNMR
+[optimized]
+preOptArgs = "--gfn0 --opt normal --niceprint"
+postOptArgs = "--gfn2 --opt normal --niceprint --gbsa chcl3"
+preThreshold = "0.25, 0.1"
+postThreshold = "0.25, 0.1"
+gauPath = "/kimariyb/g16/g16"
+orcaPath = "/home/kimariyb/orca-5.0.4/orca"
+shermoPath = "/home/kimariyb/shermo"
+```
+
+- `[dynamics]`: Configuring for dynamics.
+  - `temperature`: float, Temperature of dynamic in K.
+  - `time`: float, Time of dynamic in ps.
+  - `dump`: float, Dump of dynamic in ps.
+  - `step`: float, Step of dynamic.
+  - `hmass`: int
+  - `shake`: int
+  - `velo`: bool
+  - `nvt`: bool
+  - `sccacc`: float
+  - `dynamicsArgs`: string
+- `[optimized]`: 
+  - `preOptArgs`: string
+  - `postOptArgs`: string
+  - `preThreshold`: string
+  - `postThreshold`: string
+  - `gauPath`: string
+  - `orcaPath`: string
+  - `shermoPath`: string
+
+Next you need to prepare an xyz file, which must be used as input to the programme in order to run KYBNMR. 
+
+You can also use `./kybnmr --help` to see the KYBNMR help file. You will see the parameters you can choose to run kybnmr with
+
+```shell
+NAME:
+   kybnmr - A scripting program for fully automated calculation of NMR of large molecules
+USAGE:
+   kybnmr [OPTIONS] [command] <input>
+
+AUTHOR:
+   Kimari Y.B. <kimariyb@163.com>
+
+COMMANDS:
+   help, h  Shows a list of commands or help for one command
+
+OPTIONS:
+   --config FILE, -c FILE    Load configuration from FILE (default: "config.ini")
+   --opt value, -o value     DFT optimization and vibration procedure (default: 0)
+   --sp value, -s value      DFT single point procedure (default: 1)
+   --md value, -m value      whether molecular dynamics simulations are performed (default: 1)
+   --pre value, --pr value   whether to use crest for pre-optimization (default: 1)
+   --post value, --po value  whether to use crest for post-optimization (default: 1)
+   --help, -h                show help (default: false)
+   --version, -v             print only the version (default: false)
+
+VERSION:
+   v1.0.0(dev)
+```
+
+
 
 ## References
 
@@ -61,6 +143,8 @@ Double Check helps us to find the structures that satisfy the above two cases, a
 - S. Grimme, C. Bannwarth, P. Shushkov, _J. Chem. Theory Comput._, **2017**, 13, 1989-2009. DOI: 10.1021/acs.jctc.7b00118 
 - C. Bannwarth, S. Ehlert and S. Grimme., _J. Chem. Theory Comput._, **2019**, 15, 1652-1671. DOI: 10.1021/acs.jctc.8b01176 
 - P. Pracht, E. Caldeweyher, S. Ehlert, S. Grimme, _ChemRxiv_, **2019**, preprint. DOI: 10.26434/chemrxiv.8326202.v1
+
+> There are many more references, too many to list here.
 
 ## Thanks
 
