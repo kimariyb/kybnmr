@@ -409,7 +409,9 @@ func RunShermoToBolzmann(resultCollection []ShermoResult, shermoPath string) err
 	// 新建一个 filesNames 接收 files 的 Name
 	var filesNames []string
 	for _, file := range files {
-		filesNames = append(filesNames, file.Name())
+		// 将文件夹路径和文件名连接起来，并添加到 filesNames 中
+		filePath := filepath.Join(currentDir, "thermo/opt", file.Name())
+		filesNames = append(filesNames, filePath)
 	}
 
 	// 创建 txt 文件并写入内容
@@ -445,7 +447,7 @@ func RunShermoToBolzmann(resultCollection []ShermoResult, shermoPath string) err
 func createInputFile(filePath string, optFilePaths []string, resultCollection []ShermoResult) error {
 	var lines []string
 	for i, result := range resultCollection {
-		line := fmt.Sprintf("%s %s", optFilePaths[i], result.Energy)
+		line := fmt.Sprintf("%s;%s", optFilePaths[i], result.Energy)
 		lines = append(lines, line)
 	}
 
