@@ -400,9 +400,21 @@ func RunShermoToBolzmann(resultCollection []ShermoResult, shermoPath string) err
 		return err
 	}
 
+	// 获取 currentDir/thermo/opt 下的所有 out 文件的名字
+	files, err := ioutil.ReadDir(filepath.Join(currentDir, "thermo/opt"))
+	if err != nil {
+		return err
+	}
+
+	// 新建一个 filesNames 接收 files 的 Name
+	var filesNames []string
+	for _, file := range files {
+		filesNames = append(filesNames, file.Name())
+	}
+
 	// 创建 txt 文件并写入内容
 	txtFilePath := filepath.Join(currentDir, "thermo/opt/shermo.txt")
-	if err := createInputFile(txtFilePath, resultCollection); err != nil {
+	if err := createInputFile(txtFilePath, filesNames, resultCollection); err != nil {
 		return err
 	}
 
@@ -430,10 +442,10 @@ func RunShermoToBolzmann(resultCollection []ShermoResult, shermoPath string) err
 	return nil
 }
 
-func createInputFile(filePath string, resultCollection []ShermoResult) error {
+func createInputFile(filePath string, optFilePaths []string, resultCollection []ShermoResult) error {
 	var lines []string
-	for _, result := range resultCollection {
-		line := fmt.Sprintf("%s %s", result.FileName, result.Energy)
+	for i, result := range resultCollection {
+		line := fmt.Sprintf("%s %s", optFilePaths[i], result.Energy)
 		lines = append(lines, line)
 	}
 
