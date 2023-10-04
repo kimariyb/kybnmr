@@ -336,6 +336,8 @@ func (k *KYBNMR) Run() error {
 		return fmt.Errorf("error running DFT single point: %w", err)
 	}
 
+	// 删除 opt 和 sp 文件夹中的所有除了 out 文件之外的文件
+	utils.DeleteAllFileButKeepType(".out")
 	// ----------------------------------------------------------------
 	// 最后调用 Shermo 计算 Bolzmann 分布
 	// ----------------------------------------------------------------

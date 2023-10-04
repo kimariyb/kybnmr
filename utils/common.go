@@ -273,3 +273,59 @@ func SplitStringByComma(str string) []float64 {
 	}
 	return values
 }
+
+// DeleteAllFileButKeepType
+// 删除当前运行文件夹的 thermo/opt 和 thermo/sp 文件夹中的
+// 除指定文件类型 keepType 之外的所有文件
+// 不删除 thermo/opt 和 thermo/sp 中的文件夹
+func DeleteAllFileButKeepType(keepType string) {
+	currentDir, err := os.Getwd()
+	if err != nil {
+		fmt.Println("Failed to get current working directory:", err)
+		return
+	}
+
+	// 定义要处理的文件夹
+	folders := []string{
+		filepath.Join(currentDir, "thermo", "opt"),
+		filepath.Join(currentDir, "thermo", "sp"),
+	}
+
+	// 遍历文件夹
+	for _, folder := range folders {
+		// 打开文件夹
+		dir, err := os.Open(folder)
+		if err != nil {
+			fmt.Println("Failed to open folder:", folder, err)
+			continue
+		}
+		defer dir.Close()
+
+		// 读取文件夹中的文件
+		files, err := dir.Readdir(-1)
+		if err != nil {
+			fmt.Println("Failed to read folder contents:", folder, err)
+			continue
+		}
+
+		// 遍历文件
+		for _, file := range files {
+			// 跳过子文件夹
+			if file.IsDir() {
+				continue
+			}
+
+			// 检查文件类型是否匹配指定类型
+			if !strings.HasSuffix(file.Name(), keepType) {
+				// 删除文件
+				filePath := filepath.Join(folder, file.Name())
+				err := os.Remove(filePath)
+				if err != nil {
+					fmt.Println("Failed to delete file:", filePath, err)
+				} else {
+					fmt.Println("Deleted file:", filePath)
+				}
+			}
+		}
+	}
+}
